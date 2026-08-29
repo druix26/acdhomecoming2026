@@ -42,6 +42,46 @@ function attendeeCount() {
   return Number(document.querySelector('#attendees').value || 1);
 }
 
+const guestRows = document.querySelector('#guest-rows');
+const addGuestButton = document.querySelector('#add-guest');
+
+function guestRow(name = '') {
+  const row = document.createElement('div');
+  row.className = 'guest-row';
+  row.innerHTML = `<span></span><input name="guestNames[]" aria-label="Guest full name" placeholder="Guest full name" value="${name.replaceAll('"', '&quot;')}" required /><button class="remove-guest" type="button" aria-label="Remove guest">×</button>`;
+  row.querySelector('.remove-guest').addEventListener('click', () => {
+    row.remove();
+    renumberGuests();
+  });
+  return row;
+}
+
+function renumberGuests() {
+  const rows = [...guestRows.querySelectorAll('.guest-row')];
+  const canRemove = document.querySelector('#attendees').value === '6';
+  rows.forEach((row, index) => {
+    row.querySelector('span').textContent = index + 1;
+    row.querySelector('input').setAttribute('aria-label', `Guest ${index + 1} full name`);
+    row.querySelector('.remove-guest').hidden = !canRemove;
+  });
+  if (!rows.length) guestRows.innerHTML = '<p class="empty-guests">No guest names needed for an alumni-only registration.</p>';
+}
+
+function syncGuestRows() {
+  const selected = document.querySelector('#attendees').value;
+  const desired = selected ? Math.max(0, Number(selected) - 1) : 0;
+  const current = [...guestRows.querySelectorAll('.guest-row')];
+  if (!selected) {
+    guestRows.innerHTML = '<p class="empty-guests">Select the total number of attendees to add guest names.</p>';
+  } else {
+    guestRows.querySelector('.empty-guests')?.remove();
+    for (let index = current.length; index < desired; index += 1) guestRows.append(guestRow());
+    [...guestRows.querySelectorAll('.guest-row')].slice(desired).forEach((row) => row.remove());
+    renumberGuests();
+  }
+  addGuestButton.hidden = selected !== '6';
+}
+
 function updatePaymentSummary() {
   const count = attendeeCount();
   const amount = count * feePerPerson;
@@ -81,7 +121,15 @@ nextButton.addEventListener('click', () => {
   if (validateStep()) showStep(currentStep + 1);
 });
 backButton.addEventListener('click', () => showStep(currentStep - 1));
-document.querySelector('#attendees').addEventListener('change', updatePaymentSummary);
+document.querySelector('#attendees').addEventListener('change', () => {
+  syncGuestRows();
+  updatePaymentSummary();
+});
+addGuestButton.addEventListener('click', () => {
+  guestRows.querySelector('.empty-guests')?.remove();
+  guestRows.append(guestRow());
+  renumberGuests();
+});
 document.querySelector('#proof').addEventListener('change', (event) => {
   const file = event.target.files[0];
   document.querySelector('#upload-title').textContent = file ? file.name : 'Choose receipt file';
@@ -92,7 +140,8 @@ form.addEventListener('submit', (event) => {
   if (!validateStep()) return;
   const formData = new FormData(form);
   const file = formData.get('proof');
-  const data = Object.fromEntries([...formData.entries()].filter(([key]) => key !== 'proof'));
+  const data = Object.fromEntries([...formData.entries()].filter(([key]) => key !== 'proof' && key !== 'guestNames[]'));
+  data.guestNames = formData.getAll('guestNames[]');
   const reference = `ACD26-${Date.now().toString().slice(-6)}`;
   localStorage.setItem('acdHomecomingRegistration', JSON.stringify({ ...data, proofFileName: file.name, reference, status: 'For Payment Verification', registeredAt: new Date().toISOString() }));
   document.querySelector('#reference-number').textContent = reference;
