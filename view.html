@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Registered Alumni | ACD Homecoming 2026</title>
+    <link rel="stylesheet" href="admin.css" />
+    <link rel="stylesheet" href="view.css" />
+  </head>
+  <body>
+    <main class="dashboard">
+      <header>
+        <div><p class="eyebrow">Sama-Sama Tayo</p><h1>Registered Alumni</h1><p id="summary">Loading registrants…</p></div>
+        <div class="header-actions"><button id="refresh" type="button">Refresh</button><a href="index.html">Registration page</a></div>
+      </header>
+      <div class="filters"><label><span>Search</span><input id="search" type="search" placeholder="Name, reference, batch…" /></label><label><span>Status</span><select id="status-filter"><option value="">All statuses</option><option>For Payment Verification</option><option>Confirmed</option></select></label></div>
+      <div class="table-wrap"><table><thead><tr><th>Reference</th><th>Alumni</th><th>Registration type</th><th>Attendees</th><th>Status</th><th>Registered</th></tr></thead><tbody id="registrants"></tbody></table></div>
+      <div class="empty" id="empty" hidden>No matching registrants found.</div>
+    </main>
+    <script src="api-config.js"></script>
+    <script src="view.js"></script>
+  </body>
+</html>
