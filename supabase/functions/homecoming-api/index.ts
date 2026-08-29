@@ -33,7 +33,7 @@ Deno.serve(async (request) => {
   const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
   if (path === '/registrants' && request.method === 'GET') {
-    const fields = 'reference,full_name,batch_year,registration_type,total_attendees,status,submitted_at';
+    const fields = 'reference,full_name,batch_year,registration_type,total_attendees,guest_names,status,submitted_at';
     const { data, error } = await supabase.from('registrations').select(fields).order('submitted_at', { ascending: false }).limit(500);
     return error ? json({ error: 'Could not load registrants.' }, 502) : json({ registrants: data || [] });
   }

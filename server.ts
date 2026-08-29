@@ -202,7 +202,7 @@ async function submitRegistration(request: Request) {
 async function listPublicRegistrants() {
   const { url: supabaseUrl, key } = supabaseConfig();
   if (!supabaseUrl || !key) return Response.json({ error: "Supabase is not configured." }, { status: 503 });
-  const fields = "reference,full_name,batch_year,registration_type,total_attendees,status,submitted_at";
+  const fields = "reference,full_name,batch_year,registration_type,total_attendees,guest_names,status,submitted_at";
   const response = await fetch(`${supabaseUrl}/rest/v1/registrations?select=${fields}&order=submitted_at.desc&limit=500`, {
     headers: { apikey: key, Authorization: `Bearer ${key}` },
   });
