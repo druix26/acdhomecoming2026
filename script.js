@@ -139,20 +139,34 @@ document.querySelector('#proof').addEventListener('change', (event) => {
   document.querySelector('#upload-title').textContent = file ? file.name : 'Choose receipt file';
 });
 
-form.addEventListener('submit', (event) => {
+form.addEventListener('submit', async (event) => {
   event.preventDefault();
   if (!validateStep()) return;
   const formData = new FormData(form);
-  const file = formData.get('proof');
-  const data = Object.fromEntries([...formData.entries()].filter(([key]) => key !== 'proof' && key !== 'guestNames[]'));
-  data.guestNames = formData.getAll('guestNames[]');
-  const reference = `ACD26-${Date.now().toString().slice(-6)}`;
-  localStorage.setItem('acdHomecomingRegistration', JSON.stringify({ ...data, proofFileName: file.name, reference, status: 'For Payment Verification', registeredAt: new Date().toISOString() }));
-  document.querySelector('#reference-number').textContent = reference;
-  dialog.showModal();
-  form.reset();
-  document.querySelector('#upload-title').textContent = 'Choose receipt file';
-  showStep(0);
+  const originalText = submitButton.innerHTML;
+  submitButton.disabled = true;
+  submitButton.textContent = 'Saving registration…';
+  form.querySelector('.submission-error')?.remove();
+  try {
+    const response = await fetch('/api/register', { method: 'POST', body: formData });
+    const result = await response.json();
+    if (!response.ok || !result.success) throw new Error(result.error || 'Submission failed.');
+    localStorage.setItem('acdHomecomingRegistration', JSON.stringify({ reference: result.reference, status: result.status, submittedAt: new Date().toISOString() }));
+    document.querySelector('#reference-number').textContent = result.reference;
+    dialog.showModal();
+    form.reset();
+    document.querySelector('#upload-title').textContent = 'Choose receipt file';
+    showStep(0);
+  } catch (error) {
+    const message = document.createElement('p');
+    message.className = 'submission-error full';
+    message.setAttribute('role', 'alert');
+    message.textContent = error.message || 'We could not save your registration. Please try again.';
+    form.querySelector('.form-actions').before(message);
+  } finally {
+    submitButton.disabled = false;
+    submitButton.innerHTML = originalText;
+  }
 });
 
 document.querySelector('.dialog-close').addEventListener('click', () => dialog.close());
