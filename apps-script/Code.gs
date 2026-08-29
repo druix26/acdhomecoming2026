@@ -1,4 +1,4 @@
-const SPREADSHEET_ID = '1_ano0GT8VbAA0VT1Fad5FIubeGlAKrQmZnB95JdMg3M';
+const SPREADSHEET_ID = '171Je4O7KAU4aQsYsWNZJ_KvFadHS1eDZWPAVWblxlTc';
 const SHEET_NAME = 'Sheet1';
 const PROOF_FOLDER_NAME = 'ACD Homecoming 2026 Payment Proofs';
 const HEADERS = [
