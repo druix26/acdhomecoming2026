@@ -7,6 +7,7 @@ let registrants = [];
 
 function date(value) { return value ? new Intl.DateTimeFormat('en-PH', { dateStyle: 'medium' }).format(new Date(value)) : '—'; }
 function escapeHtml(value) { const div = document.createElement('div'); div.textContent = String(value ?? ''); return div.innerHTML; }
+function attendeeNames(row) { return [row.full_name, ...(row.guest_names || [])].filter(Boolean).join(', '); }
 
 async function readApiResponse(response) {
   const text = await response.text();
@@ -18,7 +19,7 @@ function render() {
   const query = search.value.toLowerCase().trim();
   const status = statusFilter.value;
   const rows = registrants.filter((row) => (!status || row.status === status) && (!query || [row.reference, row.full_name, row.batch_year].some((value) => String(value || '').toLowerCase().includes(query))));
-  tableBody.innerHTML = rows.map((row) => `<tr><td><strong>${escapeHtml(row.reference)}</strong></td><td><strong>${escapeHtml(row.full_name)}</strong><small>Batch ${escapeHtml(row.batch_year)}</small></td><td>${escapeHtml(row.registration_type)}</td><td><strong>${escapeHtml(row.total_attendees)}</strong></td><td><span class="status ${row.status === 'Confirmed' ? 'confirmed' : ''}">${escapeHtml(row.status)}</span></td><td>${date(row.submitted_at)}</td></tr>`).join('');
+  tableBody.innerHTML = rows.map((row) => `<tr><td><strong>${escapeHtml(row.reference)}</strong></td><td><strong>${escapeHtml(row.full_name)}</strong><small>Batch ${escapeHtml(row.batch_year)}</small></td><td>${escapeHtml(row.registration_type)}</td><td title="${escapeHtml(attendeeNames(row))}"><strong>${escapeHtml(row.total_attendees)}</strong></td><td><span class="status ${row.status === 'Confirmed' ? 'confirmed' : ''}">${escapeHtml(row.status)}</span></td><td>${date(row.submitted_at)}</td></tr>`).join('');
   empty.hidden = rows.length > 0;
   summary.textContent = `${registrants.length} registration${registrants.length === 1 ? '' : 's'} · ${registrants.reduce((sum, row) => sum + Number(row.total_attendees || 0), 0)} attendees`;
 }
