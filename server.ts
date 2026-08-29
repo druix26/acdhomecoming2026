@@ -46,12 +46,24 @@ async function submitRegistration(request: Request) {
         },
       }),
     });
-    const result = await response.json();
+    const responseText = await response.text();
+    let result;
+    try {
+      result = JSON.parse(responseText);
+    } catch {
+      const returnedHtml = responseText.trimStart().startsWith("<");
+      throw new Error(returnedHtml
+        ? "Google Apps Script returned HTML instead of JSON. Verify that the web app is deployed for anyone and that GOOGLE_APPS_SCRIPT_URL ends in /exec."
+        : "Google Apps Script returned an invalid response.");
+    }
     if (!response.ok || !result.success) throw new Error(result.error || "Google rejected the registration.");
     return Response.json(result);
   } catch (error) {
     console.error("Registration submission failed:", error);
-    return Response.json({ error: "We could not save your registration. Please try again." }, { status: 502 });
+    const message = error instanceof Error && error.message.includes("Google Apps Script returned")
+      ? "The registration storage service is not ready. Please contact the event organizer."
+      : "We could not save your registration. Please try again.";
+    return Response.json({ error: message }, { status: 502 });
   }
 }
 
