@@ -1,9 +1,10 @@
 const root = import.meta.dir;
 
 async function submitRegistration(request: Request) {
-  const endpoint = Bun.env.GOOGLE_APPS_SCRIPT_URL;
-  const secret = Bun.env.REGISTRATION_API_SECRET;
-  if (!endpoint || !secret) {
+  const supabaseUrl = Bun.env.SUPABASE_URL?.replace(/\/$/, "");
+  const serviceRoleKey = Bun.env.SUPABASE_SERVICE_ROLE_KEY;
+  const bucket = Bun.env.SUPABASE_PROOF_BUCKET || "payment-proofs";
+  if (!supabaseUrl || !serviceRoleKey) {
     return Response.json({ error: "Registration storage is not configured." }, { status: 503 });
   }
 
@@ -33,37 +34,63 @@ async function submitRegistration(request: Request) {
       }
     }
 
-    const response = await fetch(endpoint, {
+    const reference = `ACD26-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+    const safeName = proof.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const proofPath = `${reference}/${Date.now()}-${safeName}`;
+    const supabaseHeaders = {
+      apikey: serviceRoleKey,
+      Authorization: `Bearer ${serviceRoleKey}`,
+    };
+
+    const uploadResponse = await fetch(`${supabaseUrl}/storage/v1/object/${bucket}/${proofPath}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        secret,
-        fields,
-        proof: {
-          name: proof.name,
-          type: proof.type,
-          base64: Buffer.from(await proof.arrayBuffer()).toString("base64"),
-        },
-      }),
+      headers: { ...supabaseHeaders, "Content-Type": proof.type, "x-upsert": "false" },
+      body: proof,
     });
-    const responseText = await response.text();
-    let result;
-    try {
-      result = JSON.parse(responseText);
-    } catch {
-      const returnedHtml = responseText.trimStart().startsWith("<");
-      throw new Error(returnedHtml
-        ? "Google Apps Script returned HTML instead of JSON. Verify that the web app is deployed for anyone and that GOOGLE_APPS_SCRIPT_URL ends in /exec."
-        : "Google Apps Script returned an invalid response.");
+    if (!uploadResponse.ok) {
+      const detail = await uploadResponse.text();
+      throw new Error(`Supabase receipt upload failed (${uploadResponse.status}): ${detail}`);
     }
-    if (!response.ok || !result.success) throw new Error(result.error || "Google rejected the registration.");
-    return Response.json(result);
+
+    const guestNames = Array.isArray(fields.guestNames) ? fields.guestNames : [];
+    const amountPaid = Number(String(fields.amountPaid || "0").replace(/[^0-9.]/g, ""));
+    const registration = {
+      reference,
+      status: "For Payment Verification",
+      full_name: fields.name || "",
+      batch_year: Number(fields.batch || 0),
+      mobile_number: fields.phone || "",
+      email_address: fields.email || "",
+      current_location: fields.location || null,
+      registration_type: fields.registrationType || "",
+      total_attendees: Number(fields.attendees || 1),
+      guest_names: guestNames,
+      payment_method: fields.paymentMethod || "",
+      payment_name: fields.paymentName || "",
+      amount_paid: amountPaid,
+      payment_date: fields.paymentDate || null,
+      transaction_reference: fields.transactionNumber || "",
+      proof_path: proofPath,
+      proof_file_name: proof.name,
+      payment_declaration: Boolean(fields.declaration),
+      data_consent: Boolean(fields.dataConsent),
+    };
+
+    const insertResponse = await fetch(`${supabaseUrl}/rest/v1/registrations`, {
+      method: "POST",
+      headers: { ...supabaseHeaders, "Content-Type": "application/json", Prefer: "return=representation" },
+      body: JSON.stringify(registration),
+    });
+    if (!insertResponse.ok) {
+      await fetch(`${supabaseUrl}/storage/v1/object/${bucket}/${proofPath}`, { method: "DELETE", headers: supabaseHeaders });
+      const detail = await insertResponse.text();
+      throw new Error(`Supabase registration insert failed (${insertResponse.status}): ${detail}`);
+    }
+
+    return Response.json({ success: true, reference, status: registration.status });
   } catch (error) {
     console.error("Registration submission failed:", error);
-    const message = error instanceof Error && error.message.includes("Google Apps Script returned")
-      ? "The registration storage service is not ready. Please contact the event organizer."
-      : "We could not save your registration. Please try again.";
-    return Response.json({ error: message }, { status: 502 });
+    return Response.json({ error: "We could not save your registration. Please try again." }, { status: 502 });
   }
 }
 
