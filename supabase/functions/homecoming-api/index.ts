@@ -32,6 +32,12 @@ Deno.serve(async (request) => {
   const bucket = Deno.env.get('SUPABASE_PROOF_BUCKET') || 'payment-proofs';
   const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
+  if (path === '/registrants' && request.method === 'GET') {
+    const fields = 'reference,full_name,batch_year,registration_type,total_attendees,status,submitted_at';
+    const { data, error } = await supabase.from('registrations').select(fields).order('submitted_at', { ascending: false }).limit(500);
+    return error ? json({ error: 'Could not load registrants.' }, 502) : json({ registrants: data || [] });
+  }
+
   if (path === '/admin/login' && request.method === 'POST') {
     const password = Deno.env.get('ADMIN_PASSWORD'); const token = await adminToken();
     if (!password || !token) return json({ error: 'Admin access is not configured.' }, 503);

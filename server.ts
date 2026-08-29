@@ -199,12 +199,27 @@ async function submitRegistration(request: Request) {
   }
 }
 
+async function listPublicRegistrants() {
+  const { url: supabaseUrl, key } = supabaseConfig();
+  if (!supabaseUrl || !key) return Response.json({ error: "Supabase is not configured." }, { status: 503 });
+  const fields = "reference,full_name,batch_year,registration_type,total_attendees,status,submitted_at";
+  const response = await fetch(`${supabaseUrl}/rest/v1/registrations?select=${fields}&order=submitted_at.desc&limit=500`, {
+    headers: { apikey: key, Authorization: `Bearer ${key}` },
+  });
+  if (!response.ok) return Response.json({ error: "Could not load registrants." }, { status: 502 });
+  return Response.json({ registrants: await response.json() });
+}
+
 const server = Bun.serve({
   port: Number(Bun.env.PORT || 3000),
   async fetch(request) {
     const url = new URL(request.url);
     if (request.method === "OPTIONS" && url.pathname.startsWith("/api/")) {
       return new Response(null, { headers: corsHeaders });
+    }
+    if (url.pathname === "/api/registrants") {
+      if (request.method !== "GET") return withCors(new Response("Method not allowed", { status: 405 }));
+      return withCors(await listPublicRegistrants());
     }
     if (url.pathname === "/api/register") {
       if (request.method !== "POST") return new Response("Method not allowed", { status: 405 });
