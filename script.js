@@ -170,7 +170,16 @@ form.addEventListener('submit', async (event) => {
   form.querySelector('.submission-error')?.remove();
   try {
     const response = await fetch('/api/register', { method: 'POST', body: formData });
-    const result = await response.json();
+    const responseText = await response.text();
+    let result;
+    try {
+      result = JSON.parse(responseText);
+    } catch {
+      const returnedHtml = responseText.trimStart().startsWith('<');
+      throw new Error(returnedHtml
+        ? 'The registration API is not available on this deployment. Please contact the event organizer.'
+        : 'The registration service returned an invalid response. Please try again.');
+    }
     if (!response.ok || !result.success) throw new Error(result.error || 'Submission failed.');
     localStorage.setItem('acdHomecomingRegistration', JSON.stringify({ reference: result.reference, status: result.status, submittedAt: new Date().toISOString() }));
     document.querySelector('#reference-number').textContent = result.reference;
