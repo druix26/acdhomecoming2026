@@ -46,6 +46,7 @@ function attendeeCount() {
 
 const guestRows = document.querySelector('#guest-rows');
 const addGuestButton = document.querySelector('#add-guest');
+const attendeeSelect = document.querySelector('#attendees');
 
 function guestRow(name = '') {
   const row = document.createElement('div');
@@ -83,6 +84,22 @@ function syncGuestRows() {
     renumberGuests();
   }
   addGuestButton.hidden = selected !== '6';
+}
+
+function syncRegistrationType() {
+  const type = form.querySelector('input[name="registrationType"]:checked')?.value;
+  if (type === 'Alumni Only') {
+    attendeeSelect.value = '1';
+    attendeeSelect.disabled = true;
+  } else if (type === 'Alumni + Spouse/Guest') {
+    attendeeSelect.value = '2';
+    attendeeSelect.disabled = true;
+  } else {
+    attendeeSelect.disabled = false;
+    attendeeSelect.value = '';
+  }
+  syncGuestRows();
+  updatePaymentSummary();
 }
 
 function updatePaymentSummary() {
@@ -124,10 +141,11 @@ nextButton.addEventListener('click', () => {
   if (validateStep()) showStep(currentStep + 1);
 });
 backButton.addEventListener('click', () => showStep(currentStep - 1));
-document.querySelector('#attendees').addEventListener('change', () => {
+attendeeSelect.addEventListener('change', () => {
   syncGuestRows();
   updatePaymentSummary();
 });
+form.querySelectorAll('input[name="registrationType"]').forEach((input) => input.addEventListener('change', syncRegistrationType));
 addGuestButton.addEventListener('click', () => {
   guestRows.querySelector('.empty-guests')?.remove();
   guestRows.append(guestRow());
@@ -143,6 +161,7 @@ form.addEventListener('submit', async (event) => {
   event.preventDefault();
   if (!validateStep()) return;
   const formData = new FormData(form);
+  formData.set('attendees', String(attendeeCount()));
   const originalText = submitButton.innerHTML;
   submitButton.disabled = true;
   submitButton.textContent = 'Saving registration…';
@@ -155,6 +174,9 @@ form.addEventListener('submit', async (event) => {
     document.querySelector('#reference-number').textContent = result.reference;
     dialog.showModal();
     form.reset();
+    attendeeSelect.disabled = false;
+    attendeeSelect.value = '';
+    syncGuestRows();
     document.querySelector('#upload-title').textContent = 'Choose receipt file';
     showStep(0);
   } catch (error) {
