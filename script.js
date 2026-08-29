@@ -29,7 +29,7 @@ const steps = [...form.querySelectorAll('.form-step')];
 const progressItems = [...form.querySelectorAll('.form-progress li')];
 const nextButton = form.querySelector('.next-button');
 const backButton = form.querySelector('.back-button');
-const submitButton = form.querySelector('.submit');
+const submitButton = nextButton;
 const feePerPerson = 600;
 let currentStep = 0;
 
@@ -120,8 +120,7 @@ function showStep(index) {
     item.classList.toggle('complete', position < index);
   });
   backButton.hidden = index === 0;
-  nextButton.hidden = index === steps.length - 1;
-  submitButton.hidden = index !== steps.length - 1;
+  nextButton.innerHTML = index === steps.length - 1 ? 'Submit registration <span>↗</span>' : 'Next step <span>→</span>';
   if (index >= 2) updatePaymentSummary();
   form.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -138,7 +137,9 @@ function validateStep() {
 }
 
 nextButton.addEventListener('click', () => {
-  if (validateStep()) showStep(currentStep + 1);
+  if (!validateStep()) return;
+  if (currentStep === steps.length - 1) form.requestSubmit();
+  else showStep(currentStep + 1);
 });
 backButton.addEventListener('click', () => showStep(currentStep - 1));
 attendeeSelect.addEventListener('change', () => {
