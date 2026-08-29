@@ -22,3 +22,12 @@ and never expose the service-role key in browser JavaScript or HTML.
 
 The administration page is available at `/admin.html`. Its password and session
 signing secret must only be stored in the server environment.
+
+## GitHub Pages deployment
+
+GitHub Pages cannot run the Bun API. This project therefore includes the
+`homecoming-api` Supabase Edge Function for the production website. In Supabase,
+add `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`, and `SUPABASE_PROOF_BUCKET` under
+**Edge Functions → Secrets**, then deploy `supabase/functions/homecoming-api`.
+The production pages automatically send registration and admin requests to that
+function; local development continues to use the Bun API.

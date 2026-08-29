@@ -169,7 +169,7 @@ form.addEventListener('submit', async (event) => {
   submitButton.textContent = 'Saving registration…';
   form.querySelector('.submission-error')?.remove();
   try {
-    const response = await fetch('/api/register', { method: 'POST', body: formData });
+    const response = await fetch(`${window.ACD_API_BASE}/register`, { method: 'POST', body: formData });
     const responseText = await response.text();
     let result;
     try {
@@ -177,7 +177,7 @@ form.addEventListener('submit', async (event) => {
     } catch {
       const returnedHtml = responseText.trimStart().startsWith('<');
       throw new Error(returnedHtml
-        ? 'The registration API is not available on this deployment. Please contact the event organizer.'
+        ? 'The registration service is not deployed yet. Please contact the event organizer.'
         : 'The registration service returned an invalid response. Please try again.');
     }
     if (!response.ok || !result.success) throw new Error(result.error || 'Submission failed.');
