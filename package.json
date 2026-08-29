@@ -1,0 +1,7 @@
+{
+  "name": "acd-homecoming-2026",
+  "private": true,
+  "scripts": {
+    "dev": "bun --hot server.ts"
+  }
+}
