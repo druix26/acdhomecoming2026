@@ -29,6 +29,8 @@ async function adminToken() {
 async function isAdmin(request: Request) {
   const expected = await adminToken();
   if (!expected) return false;
+  const authorization = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") || "";
+  if (authorization && safeEqual(authorization, expected)) return true;
   const cookie = request.headers.get("cookie") || "";
   const token = cookie.split(";").map((part) => part.trim()).find((part) => part.startsWith("acd_admin="))?.slice(10) || "";
   return safeEqual(token, expected);
@@ -43,7 +45,7 @@ async function handleAdminApi(request: Request, url: URL) {
     const body = await request.json().catch(() => ({}));
     if (!safeEqual(String(body.password || ""), configuredPassword)) return Response.json({ error: "Incorrect password." }, { status: 401 });
     const secure = url.protocol === "https:" ? "; Secure" : "";
-    return new Response(JSON.stringify({ success: true }), {
+    return new Response(JSON.stringify({ success: true, token }), {
       headers: { "Content-Type": "application/json", "Set-Cookie": `acd_admin=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=28800${secure}` },
     });
   }

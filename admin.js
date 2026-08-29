@@ -8,6 +8,12 @@ const summary = document.querySelector('#summary');
 const search = document.querySelector('#search');
 const statusFilter = document.querySelector('#status-filter');
 let registrations = [];
+const adminTokenKey = 'acdAdminToken';
+
+function apiHeaders() {
+  const token = sessionStorage.getItem(adminTokenKey);
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
 
 function money(value) { return new Intl.NumberFormat('en-PH',{style:'currency',currency:'PHP',maximumFractionDigits:0}).format(value || 0); }
 function date(value) { return value ? new Intl.DateTimeFormat('en-PH',{dateStyle:'medium',timeStyle:'short'}).format(new Date(value)) : '—'; }
@@ -20,7 +26,7 @@ async function readApiResponse(response) {
   } catch {
     const returnedHtml = responseText.trimStart().startsWith('<');
     throw new Error(returnedHtml
-      ? 'The admin API is not available on this deployment. Deploy the site with the Bun server instead of static hosting.'
+      ? 'The admin service is not deployed yet. Deploy the homecoming-api Supabase Edge Function and try again.'
       : 'The admin service returned an invalid response. Please try again.');
   }
 }
@@ -37,7 +43,7 @@ function render() {
 async function loadRegistrations() {
   summary.textContent = 'Loading records…';
   try {
-    const response = await fetch('/api/admin/registrations');
+    const response = await fetch(`${window.ACD_API_BASE}/admin/registrations`, { headers: apiHeaders() });
     if (response.status === 401) return showLogin();
     const result = await readApiResponse(response);
     if (!response.ok) throw new Error(result.error || 'Could not load registrations.');
@@ -48,15 +54,15 @@ async function loadRegistrations() {
   }
 }
 
-function showLogin() { loginView.hidden=false; dashboard.hidden=true; }
+function showLogin() { sessionStorage.removeItem(adminTokenKey); loginView.hidden=false; dashboard.hidden=true; }
 function showDashboard() { loginView.hidden=true; dashboard.hidden=false; loadRegistrations(); }
 
 loginForm.addEventListener('submit', async (event) => {
   event.preventDefault(); loginError.textContent='';
   const button=loginForm.querySelector('button'); button.disabled=true; button.textContent='Signing in…';
-  try { const response=await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:document.querySelector('#password').value})}); const result=await readApiResponse(response); if(!response.ok) throw new Error(result.error||'Could not sign in.'); loginForm.reset(); showDashboard(); } catch(error) { loginError.textContent=error.message; } finally { button.disabled=false; button.textContent='Sign in'; }
+  try { const response=await fetch(`${window.ACD_API_BASE}/admin/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:document.querySelector('#password').value})}); const result=await readApiResponse(response); if(!response.ok) throw new Error(result.error||'Could not sign in.'); sessionStorage.setItem(adminTokenKey,result.token); loginForm.reset(); showDashboard(); } catch(error) { loginError.textContent=error.message; } finally { button.disabled=false; button.textContent='Sign in'; }
 });
-document.querySelector('#logout').addEventListener('click',async()=>{await fetch('/api/admin/logout',{method:'POST'});showLogin();});
+document.querySelector('#logout').addEventListener('click',showLogin);
 document.querySelector('#refresh').addEventListener('click',loadRegistrations);
 search.addEventListener('input',render); statusFilter.addEventListener('change',render);
-fetch('/api/admin/session').then((response)=>response.ok?showDashboard():showLogin()).catch(showLogin);
+sessionStorage.getItem(adminTokenKey) ? showDashboard() : showLogin();
