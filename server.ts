@@ -1,5 +1,16 @@
 const root = import.meta.dir;
 const encoder = new TextEncoder();
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, content-type",
+  "Access-Control-Allow-Methods": "GET, POST, PATCH, OPTIONS",
+};
+
+function withCors(response: Response) {
+  const headers = new Headers(response.headers);
+  for (const [key, value] of Object.entries(corsHeaders)) headers.set(key, value);
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
 
 function supabaseConfig() {
   return {
@@ -78,6 +89,19 @@ async function handleAdminApi(request: Request, url: URL) {
       return { ...row, receipt_url: signedPath ? `${supabaseUrl}/storage/v1${signedPath}` : null };
     }));
     return Response.json({ registrations });
+  }
+
+  const confirmationMatch = url.pathname.match(/^\/api\/admin\/registrations\/(\d+)\/confirm$/);
+  if (confirmationMatch && request.method === "PATCH") {
+    const { url: supabaseUrl, key } = supabaseConfig();
+    if (!supabaseUrl || !key) return Response.json({ error: "Supabase is not configured." }, { status: 503 });
+    const response = await fetch(`${supabaseUrl}/rest/v1/registrations?id=eq.${confirmationMatch[1]}`, {
+      method: "PATCH",
+      headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json", Prefer: "return=minimal" },
+      body: JSON.stringify({ status: "Confirmed" }),
+    });
+    if (!response.ok) return Response.json({ error: "Could not confirm registration." }, { status: 502 });
+    return Response.json({ success: true, status: "Confirmed" });
   }
 
   return new Response("Not found", { status: 404 });
@@ -179,11 +203,14 @@ const server = Bun.serve({
   port: Number(Bun.env.PORT || 3000),
   async fetch(request) {
     const url = new URL(request.url);
+    if (request.method === "OPTIONS" && url.pathname.startsWith("/api/")) {
+      return new Response(null, { headers: corsHeaders });
+    }
     if (url.pathname === "/api/register") {
       if (request.method !== "POST") return new Response("Method not allowed", { status: 405 });
-      return submitRegistration(request);
+      return withCors(await submitRegistration(request));
     }
-    if (url.pathname.startsWith("/api/admin/")) return handleAdminApi(request, url);
+    if (url.pathname.startsWith("/api/admin/")) return withCors(await handleAdminApi(request, url));
     const pathname = decodeURIComponent(url.pathname === "/" ? "/index.html" : url.pathname);
     const filePath = `${root}${pathname}`;
 
