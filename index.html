@@ -100,12 +100,6 @@
           <p class="kicker">Registration</p>
           <h2>Your homecoming starts here.</h2>
           <p>Tell us a little about you. Register yourself, a guest, or your whole family in one guided submission.</p>
-          <div class="help-card">
-            <strong>Need a hand?</strong>
-            <p>For registration and event inquiries, contact the organizing team.</p>
-            <a href="tel:+639912278120">0991 227 8120</a>
-            <a href="mailto:abbyvincanque@gmail.com">abbyvincanque@gmail.com</a>
-          </div>
         </div>
 
         <form id="registration-form" novalidate>
@@ -119,8 +113,7 @@
             <legend><small>Section 1</small> Alumni information</legend>
             <div class="step-grid">
               <div class="field full"><label for="name">Full name *</label><input id="name" name="name" autocomplete="name" placeholder="Juan Dela Cruz" required /></div>
-              <div class="field"><label for="maiden-name">Maiden name <span>(if applicable)</span></label><input id="maiden-name" name="maidenName" placeholder="Maiden name" /></div>
-              <div class="field"><label for="batch">ACD batch / graduation year *</label><select id="batch" name="batch" required><option value="">Select batch year</option></select></div>
+              <div class="field full"><label for="batch">ACD batch / graduation year *</label><select id="batch" name="batch" required><option value="">Select batch year</option></select></div>
               <div class="field"><label for="phone">Mobile number *</label><input id="phone" name="phone" type="tel" autocomplete="tel" placeholder="09XX XXX XXXX" required /></div>
               <div class="field"><label for="email">Email address *</label><input id="email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required /></div>
               <div class="field full"><label for="location">Current city / country <span>(optional)</span></label><input id="location" name="location" autocomplete="address-level2" placeholder="Davao City, Philippines" /></div>
@@ -132,21 +125,19 @@
             <div class="step-grid">
               <div class="field full"><span class="field-label">Registration type *</span><div class="choice-grid"><label><input type="radio" name="registrationType" value="Alumni Only" required /><span>Alumni only</span></label><label><input type="radio" name="registrationType" value="Alumni + Spouse/Guest" required /><span>Alumni + spouse/guest</span></label><label><input type="radio" name="registrationType" value="Alumni + Family/Multiple Guests" required /><span>Alumni + family/multiple guests</span></label></div></div>
               <div class="field full"><label for="attendees">Total number of attendees *</label><select id="attendees" name="attendees" required><option value="">Select total attendees</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">More than 5</option></select></div>
-              <div class="field full"><label for="guests">Name(s) of guest(s)</label><textarea id="guests" name="guests" rows="3" placeholder="Provide the full name of each guest included in your registration"></textarea></div>
-              <div class="field"><label for="dietary">Dietary restrictions / food allergies <span>(optional)</span></label><textarea id="dietary" name="dietary" rows="3"></textarea></div>
-              <div class="field"><label for="accessibility">Accessibility or special assistance <span>(optional)</span></label><textarea id="accessibility" name="accessibility" rows="3"></textarea></div>
+              <div class="field full guest-field"><span class="field-label">Name(s) of guest(s)</span><p class="field-help">Add the full name of each guest included in your registration.</p><div id="guest-rows" class="guest-rows" aria-live="polite"><p class="empty-guests">Select the total number of attendees to add guest names.</p></div><button class="add-guest" id="add-guest" type="button" hidden>+ Add another guest</button></div>
             </div>
           </fieldset>
 
           <fieldset class="form-step full" data-step="3">
             <legend><small>Section 3</small> Complete your payment</legend>
-            <div class="payment-total"><span>Registration fee</span><strong>₱1,000 <small>per person</small></strong><p>Amount due for <b id="attendee-label">1 attendee</b></p><output id="amount-due">₱1,000</output></div>
+            <div class="payment-total"><span>Registration fee</span><strong>₱600 <small>per person</small></strong><p>Amount due for <b id="attendee-label">1 attendee</b></p><output id="amount-due">₱600</output></div>
             <p class="payment-note">You’re almost done! Complete your payment using either option below, then save or screenshot your transaction receipt.</p>
             <div class="payment-options">
               <article><strong>GCash</strong><dl><dt>Account name</dt><dd>Mary May Rossan Divinagracia</dd><dt>GCash number</dt><dd>0927 629 3866</dd></dl></article>
               <article><strong>BDO Bank Transfer</strong><dl><dt>Account name</dt><dd>Mary May Rossan Divinagracia</dd><dt>Account number</dt><dd>0102 5010 3494</dd></dl></article>
             </div>
-            <p class="fee-disclaimer">The ₱1,000 fee is currently configured from the supplied example and can be updated once the official ticket price is confirmed.</p>
+            <p class="fee-disclaimer">For groups of more than five, the total is calculated from the registering alumnus plus every guest name listed in Section 2.</p>
           </fieldset>
 
           <fieldset class="form-step full" data-step="4">
@@ -154,7 +145,7 @@
             <div class="step-grid">
               <div class="field full"><span class="field-label">Payment method *</span><div class="choice-grid"><label><input type="radio" name="paymentMethod" value="GCash" required /><span>GCash</span></label><label><input type="radio" name="paymentMethod" value="Bank Transfer" required /><span>Bank transfer</span></label><label><input type="radio" name="paymentMethod" value="Other approved payment option" required /><span>Other approved option</span></label></div></div>
               <div class="field"><label for="payment-name">Name used for payment *</label><input id="payment-name" name="paymentName" required /></div>
-              <div class="field"><label for="amount-paid">Amount paid *</label><input id="amount-paid" name="amountPaid" inputmode="decimal" placeholder="₱0.00" required /></div>
+              <div class="field"><label for="amount-paid">Amount paid *</label><input id="amount-paid" name="amountPaid" value="₱600" readonly aria-readonly="true" required /></div>
               <div class="field"><label for="payment-date">Date of payment *</label><input id="payment-date" name="paymentDate" type="date" required /></div>
               <div class="field"><label for="transaction-number">Transaction / reference number *</label><input id="transaction-number" name="transactionNumber" required /></div>
               <div class="field full"><label for="proof">Upload proof of payment *</label><label class="upload-box" for="proof"><input id="proof" name="proof" type="file" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" required /><span class="upload-icon">↑</span><strong id="upload-title">Choose receipt file</strong><small>JPG, PNG or PDF</small></label></div>
@@ -168,7 +159,7 @@
             <label class="check"><input type="checkbox" name="dataConsent" required /><span><b>Data consent.</b> I consent to the collection and use of this information for registration, payment verification, event coordination, and related communications.</span></label>
           </fieldset>
 
-          <div class="form-actions full"><button class="button back-button" type="button" hidden>← Back</button><button class="button primary next-button" type="button">Next step <span>→</span></button><button class="button primary submit" type="submit" hidden>Submit registration <span>↗</span></button></div>
+          <div class="form-actions full"><button class="button back-button" type="button" hidden>← Back</button><button class="button primary next-button submit" type="button">Next step <span>→</span></button></div>
           <p class="form-note">Registration becomes confirmed after the Homecoming Committee verifies your payment.</p>
         </form>
       </section>
