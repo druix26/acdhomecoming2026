@@ -145,7 +145,7 @@
             <div class="step-grid">
               <div class="field full"><span class="field-label">Payment method *</span><div class="choice-grid"><label><input type="radio" name="paymentMethod" value="GCash" required /><span>GCash</span></label><label><input type="radio" name="paymentMethod" value="Bank Transfer" required /><span>Bank transfer</span></label><label><input type="radio" name="paymentMethod" value="Other approved payment option" required /><span>Other approved option</span></label></div></div>
               <div class="field"><label for="payment-name">Name used for payment *</label><input id="payment-name" name="paymentName" required /></div>
-              <div class="field"><label for="amount-paid">Amount paid *</label><input id="amount-paid" name="amountPaid" inputmode="decimal" placeholder="₱0.00" required /></div>
+              <div class="field"><label for="amount-paid">Amount paid *</label><input id="amount-paid" name="amountPaid" value="₱600" readonly aria-readonly="true" required /></div>
               <div class="field"><label for="payment-date">Date of payment *</label><input id="payment-date" name="paymentDate" type="date" required /></div>
               <div class="field"><label for="transaction-number">Transaction / reference number *</label><input id="transaction-number" name="transactionNumber" required /></div>
               <div class="field full"><label for="proof">Upload proof of payment *</label><label class="upload-box" for="proof"><input id="proof" name="proof" type="file" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" required /><span class="upload-icon">↑</span><strong id="upload-title">Choose receipt file</strong><small>JPG, PNG or PDF</small></label></div>

@@ -107,6 +107,7 @@ function updatePaymentSummary() {
   const amount = count * feePerPerson;
   document.querySelector('#attendee-label').textContent = `${count} attendee${count === 1 ? '' : 's'}`;
   document.querySelector('#amount-due').textContent = `₱${amount.toLocaleString()}`;
+  document.querySelector('#amount-paid').value = `₱${amount.toLocaleString()}`;
   document.querySelector('#review-name').textContent = document.querySelector('#name').value || '—';
   document.querySelector('#review-attendees').textContent = `${count} attendee${count === 1 ? '' : 's'}`;
   document.querySelector('#review-amount').textContent = `₱${amount.toLocaleString()} due`;
