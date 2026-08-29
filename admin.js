@@ -13,6 +13,18 @@ function money(value) { return new Intl.NumberFormat('en-PH',{style:'currency',c
 function date(value) { return value ? new Intl.DateTimeFormat('en-PH',{dateStyle:'medium',timeStyle:'short'}).format(new Date(value)) : '—'; }
 function escapeHtml(value) { const div=document.createElement('div'); div.textContent=String(value??''); return div.innerHTML; }
 
+async function readApiResponse(response) {
+  const responseText = await response.text();
+  try {
+    return JSON.parse(responseText);
+  } catch {
+    const returnedHtml = responseText.trimStart().startsWith('<');
+    throw new Error(returnedHtml
+      ? 'The admin API is not available on this deployment. Deploy the site with the Bun server instead of static hosting.'
+      : 'The admin service returned an invalid response. Please try again.');
+  }
+}
+
 function render() {
   const query = search.value.toLowerCase().trim();
   const status = statusFilter.value;
@@ -24,12 +36,16 @@ function render() {
 
 async function loadRegistrations() {
   summary.textContent = 'Loading records…';
-  const response = await fetch('/api/admin/registrations');
-  if (response.status === 401) return showLogin();
-  const result = await response.json();
-  if (!response.ok) { summary.textContent = result.error || 'Could not load registrations.'; return; }
-  registrations = result.registrations || [];
-  render();
+  try {
+    const response = await fetch('/api/admin/registrations');
+    if (response.status === 401) return showLogin();
+    const result = await readApiResponse(response);
+    if (!response.ok) throw new Error(result.error || 'Could not load registrations.');
+    registrations = result.registrations || [];
+    render();
+  } catch (error) {
+    summary.textContent = error.message || 'Could not load registrations.';
+  }
 }
 
 function showLogin() { loginView.hidden=false; dashboard.hidden=true; }
@@ -38,7 +54,7 @@ function showDashboard() { loginView.hidden=true; dashboard.hidden=false; loadRe
 loginForm.addEventListener('submit', async (event) => {
   event.preventDefault(); loginError.textContent='';
   const button=loginForm.querySelector('button'); button.disabled=true; button.textContent='Signing in…';
-  try { const response=await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:document.querySelector('#password').value})}); const result=await response.json(); if(!response.ok) throw new Error(result.error||'Could not sign in.'); loginForm.reset(); showDashboard(); } catch(error) { loginError.textContent=error.message; } finally { button.disabled=false; button.textContent='Sign in'; }
+  try { const response=await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:document.querySelector('#password').value})}); const result=await readApiResponse(response); if(!response.ok) throw new Error(result.error||'Could not sign in.'); loginForm.reset(); showDashboard(); } catch(error) { loginError.textContent=error.message; } finally { button.disabled=false; button.textContent='Sign in'; }
 });
 document.querySelector('#logout').addEventListener('click',async()=>{await fetch('/api/admin/logout',{method:'POST'});showLogin();});
 document.querySelector('#refresh').addEventListener('click',loadRegistrations);
