@@ -3,7 +3,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, content-type',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, PATCH, OPTIONS',
 };
 const encoder = new TextEncoder();
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
@@ -51,6 +51,15 @@ Deno.serve(async (request) => {
       return { ...row, receipt_url: signed?.signedUrl || null };
     }));
     return json({ registrations });
+  }
+
+  const confirmationMatch = path.match(/^\/admin\/registrations\/(\d+)\/confirm$/);
+  if (confirmationMatch && request.method === 'PATCH') {
+    const expected = await adminToken();
+    const supplied = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '') || '';
+    if (!expected || !safeEqual(supplied, expected)) return json({ error: 'Unauthorized.' }, 401);
+    const { error } = await supabase.from('registrations').update({ status: 'Confirmed' }).eq('id', Number(confirmationMatch[1]));
+    return error ? json({ error: 'Could not confirm registration.' }, 502) : json({ success: true, status: 'Confirmed' });
   }
 
   if (path !== '/register' || request.method !== 'POST') return json({ error: 'Not found.' }, 404);

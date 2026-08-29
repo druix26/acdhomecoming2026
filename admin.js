@@ -35,7 +35,7 @@ function render() {
   const query = search.value.toLowerCase().trim();
   const status = statusFilter.value;
   const rows = registrations.filter((row) => (!status || row.status === status) && (!query || [row.reference,row.full_name,row.email_address,row.batch_year,row.transaction_reference].some((value) => String(value||'').toLowerCase().includes(query))));
-  tableBody.innerHTML = rows.map((row) => `<tr><td><strong>${escapeHtml(row.reference)}</strong><small>Batch ${escapeHtml(row.batch_year)}</small></td><td><strong>${escapeHtml(row.full_name)}</strong><small>${escapeHtml(row.email_address)}</small><small>${escapeHtml(row.mobile_number)}</small></td><td><strong>${row.total_attendees} attendee${row.total_attendees===1?'':'s'}</strong><small>${escapeHtml((row.guest_names||[]).join(', ')||'No guests')}</small></td><td><strong>${money(row.amount_paid)}</strong><small>${escapeHtml(row.payment_method)}</small><small>${escapeHtml(row.transaction_reference)}</small></td><td><span class="status ${row.status==='Confirmed'?'confirmed':''}">${escapeHtml(row.status)}</span></td><td>${date(row.submitted_at)}</td><td>${row.receipt_url?`<a class="receipt" href="${escapeHtml(row.receipt_url)}" target="_blank" rel="noopener">View receipt ↗</a>`:'Unavailable'}</td></tr>`).join('');
+  tableBody.innerHTML = rows.map((row) => `<tr><td><strong>${escapeHtml(row.reference)}</strong><small>Batch ${escapeHtml(row.batch_year)}</small></td><td><strong>${escapeHtml(row.full_name)}</strong><small>${escapeHtml(row.email_address)}</small><small>${escapeHtml(row.mobile_number)}</small></td><td><strong>${row.total_attendees} attendee${row.total_attendees===1?'':'s'}</strong><small>${escapeHtml((row.guest_names||[]).join(', ')||'No guests')}</small></td><td><strong>${money(row.amount_paid)}</strong><small>${escapeHtml(row.payment_method)}</small><small>${escapeHtml(row.transaction_reference)}</small></td><td><span class="status ${row.status==='Confirmed'?'confirmed':''}">${escapeHtml(row.status)}</span></td><td>${date(row.submitted_at)}</td><td>${row.receipt_url?`<a class="receipt" href="${escapeHtml(row.receipt_url)}" target="_blank" rel="noopener">View receipt ↗</a>`:'Unavailable'}</td><td><input class="verify-registration" type="checkbox" aria-label="Verify ${escapeHtml(row.full_name)}" data-id="${escapeHtml(row.id)}" ${row.status==='Confirmed'?'checked disabled':''}></td></tr>`).join('');
   empty.hidden = rows.length > 0;
   summary.textContent = `${registrations.length} total registration${registrations.length===1?'':'s'} · ${registrations.reduce((sum,row)=>sum+Number(row.total_attendees||0),0)} attendees`;
 }
@@ -64,5 +64,25 @@ loginForm.addEventListener('submit', async (event) => {
 });
 document.querySelector('#logout').addEventListener('click',showLogin);
 document.querySelector('#refresh').addEventListener('click',loadRegistrations);
+tableBody.addEventListener('change', async (event) => {
+  const checkbox = event.target.closest('.verify-registration');
+  if (!checkbox?.checked) return;
+  checkbox.disabled = true;
+  try {
+    const response = await fetch(`${window.ACD_API_BASE}/admin/registrations/${encodeURIComponent(checkbox.dataset.id)}/confirm`, { method: 'PATCH', headers: apiHeaders() });
+    const result = await readApiResponse(response);
+    if (!response.ok) throw new Error(result.error || 'Could not confirm registration.');
+    const registration = registrations.find((row) => String(row.id) === checkbox.dataset.id);
+    if (registration) registration.status = 'Confirmed';
+    render();
+  } catch (error) {
+    checkbox.checked = false;
+    checkbox.disabled = false;
+    const message = error instanceof TypeError && error.message === 'Failed to fetch'
+      ? 'Could not reach the registration service. If you opened this page from a local file, start Bun and use http://localhost:3000/admin.html.'
+      : error.message || 'Could not confirm registration.';
+    window.alert(message);
+  }
+});
 search.addEventListener('input',render); statusFilter.addEventListener('change',render);
 sessionStorage.getItem(adminTokenKey) ? showDashboard() : showLogin();
