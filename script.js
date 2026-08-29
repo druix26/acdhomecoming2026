@@ -30,7 +30,7 @@ const progressItems = [...form.querySelectorAll('.form-progress li')];
 const nextButton = form.querySelector('.next-button');
 const backButton = form.querySelector('.back-button');
 const submitButton = form.querySelector('.submit');
-const feePerPerson = 1000;
+const feePerPerson = 600;
 let currentStep = 0;
 
 const batchSelect = document.querySelector('#batch');
@@ -39,7 +39,9 @@ for (let year = 2026; year >= 1950; year -= 1) {
 }
 
 function attendeeCount() {
-  return Number(document.querySelector('#attendees').value || 1);
+  const selected = document.querySelector('#attendees').value;
+  if (selected === '6') return 1 + document.querySelectorAll('.guest-row').length;
+  return Number(selected || 1);
 }
 
 const guestRows = document.querySelector('#guest-rows');
@@ -52,6 +54,7 @@ function guestRow(name = '') {
   row.querySelector('.remove-guest').addEventListener('click', () => {
     row.remove();
     renumberGuests();
+    updatePaymentSummary();
   });
   return row;
 }
@@ -85,11 +88,11 @@ function syncGuestRows() {
 function updatePaymentSummary() {
   const count = attendeeCount();
   const amount = count * feePerPerson;
-  document.querySelector('#attendee-label').textContent = count > 5 ? 'more than 5 attendees' : `${count} attendee${count === 1 ? '' : 's'}`;
-  document.querySelector('#amount-due').textContent = count > 5 ? 'Contact committee' : `₱${amount.toLocaleString()}`;
+  document.querySelector('#attendee-label').textContent = `${count} attendee${count === 1 ? '' : 's'}`;
+  document.querySelector('#amount-due').textContent = `₱${amount.toLocaleString()}`;
   document.querySelector('#review-name').textContent = document.querySelector('#name').value || '—';
-  document.querySelector('#review-attendees').textContent = count > 5 ? 'More than 5 attendees' : `${count} attendee${count === 1 ? '' : 's'}`;
-  document.querySelector('#review-amount').textContent = count > 5 ? 'Fee confirmation required' : `₱${amount.toLocaleString()} due`;
+  document.querySelector('#review-attendees').textContent = `${count} attendee${count === 1 ? '' : 's'}`;
+  document.querySelector('#review-amount').textContent = `₱${amount.toLocaleString()} due`;
 }
 
 function showStep(index) {
@@ -129,6 +132,7 @@ addGuestButton.addEventListener('click', () => {
   guestRows.querySelector('.empty-guests')?.remove();
   guestRows.append(guestRow());
   renumberGuests();
+  updatePaymentSummary();
 });
 document.querySelector('#proof').addEventListener('change', (event) => {
   const file = event.target.files[0];
