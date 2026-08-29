@@ -2,10 +2,9 @@ const SPREADSHEET_ID = '171Je4O7KAU4aQsYsWNZJ_KvFadHS1eDZWPAVWblxlTc';
 const SHEET_NAME = 'Sheet1';
 const PROOF_FOLDER_NAME = 'ACD Homecoming 2026 Payment Proofs';
 const HEADERS = [
-  'Submitted At', 'Registration Reference', 'Status', 'Full Name', 'Maiden Name',
+  'Submitted At', 'Registration Reference', 'Status', 'Full Name',
   'Batch / Graduation Year', 'Mobile Number', 'Email Address', 'Current City / Country',
-  'Registration Type', 'Total Attendees', 'Guest Names', 'Dietary Restrictions / Allergies',
-  'Accessibility / Special Assistance', 'Payment Method', 'Name Used for Payment',
+  'Registration Type', 'Total Attendees', 'Guest Names', 'Payment Method', 'Name Used for Payment',
   'Amount Paid', 'Payment Date', 'Transaction / Reference Number', 'Proof of Payment Link',
   'Proof File Name', 'Registration & Payment Declaration', 'Data Consent'
 ];
@@ -20,8 +19,8 @@ function setup() {
     sheet.setFrozenRows(1);
     sheet.setRowHeight(1, 48);
     sheet.setColumnWidths(1, HEADERS.length, 150);
-    sheet.setColumnWidths(12, 3, 230);
-    sheet.setColumnWidth(20, 260);
+    sheet.setColumnWidth(11, 230);
+    sheet.setColumnWidth(17, 260);
   }
   getProofFolder_();
 }
@@ -46,10 +45,9 @@ function doPost(event) {
     const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_NAME);
     if (!sheet.getRange(1, 1).getValue()) setup();
     sheet.appendRow([
-      new Date(), reference, status, fields.name || '', fields.maidenName || '', fields.batch || '',
-      fields.phone || '', fields.email || '', fields.location || '', fields.registrationType || '',
-      fields.attendees || '', (fields.guestNames || []).join('\n'), fields.dietary || '',
-      fields.accessibility || '', fields.paymentMethod || '', fields.paymentName || '',
+      new Date(), reference, status, fields.name || '', fields.batch || '', fields.phone || '',
+      fields.email || '', fields.location || '', fields.registrationType || '', fields.attendees || '',
+      (fields.guestNames || []).join('\n'), fields.paymentMethod || '', fields.paymentName || '',
       fields.amountPaid || '', fields.paymentDate || '', fields.transactionNumber || '', proofLink,
       proof.name, fields.declaration ? 'Confirmed' : '', fields.dataConsent ? 'Consented' : ''
     ]);

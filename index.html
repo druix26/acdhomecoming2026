@@ -119,8 +119,7 @@
             <legend><small>Section 1</small> Alumni information</legend>
             <div class="step-grid">
               <div class="field full"><label for="name">Full name *</label><input id="name" name="name" autocomplete="name" placeholder="Juan Dela Cruz" required /></div>
-              <div class="field"><label for="maiden-name">Maiden name <span>(if applicable)</span></label><input id="maiden-name" name="maidenName" placeholder="Maiden name" /></div>
-              <div class="field"><label for="batch">ACD batch / graduation year *</label><select id="batch" name="batch" required><option value="">Select batch year</option></select></div>
+              <div class="field full"><label for="batch">ACD batch / graduation year *</label><select id="batch" name="batch" required><option value="">Select batch year</option></select></div>
               <div class="field"><label for="phone">Mobile number *</label><input id="phone" name="phone" type="tel" autocomplete="tel" placeholder="09XX XXX XXXX" required /></div>
               <div class="field"><label for="email">Email address *</label><input id="email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required /></div>
               <div class="field full"><label for="location">Current city / country <span>(optional)</span></label><input id="location" name="location" autocomplete="address-level2" placeholder="Davao City, Philippines" /></div>
@@ -133,8 +132,6 @@
               <div class="field full"><span class="field-label">Registration type *</span><div class="choice-grid"><label><input type="radio" name="registrationType" value="Alumni Only" required /><span>Alumni only</span></label><label><input type="radio" name="registrationType" value="Alumni + Spouse/Guest" required /><span>Alumni + spouse/guest</span></label><label><input type="radio" name="registrationType" value="Alumni + Family/Multiple Guests" required /><span>Alumni + family/multiple guests</span></label></div></div>
               <div class="field full"><label for="attendees">Total number of attendees *</label><select id="attendees" name="attendees" required><option value="">Select total attendees</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">More than 5</option></select></div>
               <div class="field full guest-field"><span class="field-label">Name(s) of guest(s)</span><p class="field-help">Add the full name of each guest included in your registration.</p><div id="guest-rows" class="guest-rows" aria-live="polite"><p class="empty-guests">Select the total number of attendees to add guest names.</p></div><button class="add-guest" id="add-guest" type="button" hidden>+ Add another guest</button></div>
-              <div class="field"><label for="dietary">Dietary restrictions / food allergies <span>(optional)</span></label><textarea id="dietary" name="dietary" rows="3"></textarea></div>
-              <div class="field"><label for="accessibility">Accessibility or special assistance <span>(optional)</span></label><textarea id="accessibility" name="accessibility" rows="3"></textarea></div>
             </div>
           </fieldset>
 
