@@ -41,3 +41,5 @@
 }
 .hero-art{right:clamp(32px,5vw,80px)}
 @media(max-width:700px){.hero-art{right:16px}}
+.cause-card-with-photo .cause-icon{margin-bottom:18px}
+.cause-photo{width:100%;height:170px;object-fit:cover;object-position:center 62%;border-radius:4px;margin-bottom:24px}
