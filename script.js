@@ -207,3 +207,25 @@ document.querySelector('.dialog-done').addEventListener('click', () => dialog.cl
 dialog.addEventListener('click', (event) => {
   if (event.target === dialog) dialog.close();
 });
+
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const revealText = document.querySelectorAll(
+  'main > section:not(.hero) :is(.section-number, .kicker, h2, h3, p, li, dt, dd, .form-heading span, .form-heading small)'
+);
+
+if (!reducedMotion && 'IntersectionObserver' in window) {
+  revealText.forEach((element, index) => {
+    element.classList.add('scroll-reveal');
+    element.style.setProperty('--reveal-delay', `${(index % 5) * 70}ms`);
+  });
+
+  const textObserver = new IntersectionObserver((entries, observer) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add('is-revealed');
+      observer.unobserve(entry.target);
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+
+  revealText.forEach((element) => textObserver.observe(element));
+}
