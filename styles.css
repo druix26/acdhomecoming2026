@@ -39,3 +39,5 @@
   footer{align-items:center;justify-content:center;text-align:center;gap:12px}
   .footer-mark{align-items:center;justify-content:center}
 }
+.hero-art{right:clamp(32px,5vw,80px)}
+@media(max-width:700px){.hero-art{right:16px}}
