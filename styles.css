@@ -31,3 +31,11 @@
 .scroll-reveal{opacity:0}
 .scroll-reveal.is-revealed{animation:section-text-reveal .7s cubic-bezier(.22,1,.36,1) var(--reveal-delay,0ms) forwards;will-change:transform,opacity,filter}
 @media(prefers-reduced-motion:reduce){.scroll-reveal{opacity:1}.scroll-reveal.is-revealed{animation:none}}
+@media(max-width:700px){
+  .hero-badges{left:50%;right:auto;justify-self:center;text-align:center;transform:translateX(-50%)}
+  .countdown{align-items:center;justify-content:center;text-align:center;gap:12px}
+  .countdown>p{margin:0}
+  .countdown div{justify-content:center}
+  footer{align-items:center;justify-content:center;text-align:center;gap:12px}
+  .footer-mark{align-items:center;justify-content:center}
+}
