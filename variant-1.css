@@ -124,3 +124,11 @@ footer p,footer>a{color:#fff}
 .hero-meta .hero-badges p{margin:0 0 10px}
 @media(max-width:980px){.hero{padding-bottom:80px}.hero-meta{flex-direction:column;align-items:stretch;max-width:760px}.hero-meta .hero-badges{position:relative;right:auto;bottom:auto;transform:none;align-self:stretch}.hero-meta .hero-badges>div{justify-content:center}}
 @media(max-width:700px){.hero{padding-bottom:70px}.hero-meta{margin-top:38px;gap:16px}.hero-meta .event-strip,.hero-meta .hero-badges{width:100%}}
+
+/* Early-bird promotional callout */
+.promo-banner{position:relative;margin-top:32px;padding:24px 26px 24px 30px;background:linear-gradient(135deg,var(--gold),#ff8ccf 58%,var(--coral));color:#10144d;border:2px solid #fff;border-radius:20px;box-shadow:7px 7px 0 var(--cyan),0 18px 38px rgba(0,0,0,.28);transform:rotate(-1deg);overflow:hidden}
+.promo-banner:after{content:"✦";position:absolute;right:16px;top:8px;color:#fff;font-size:42px;line-height:1;text-shadow:0 0 14px rgba(255,255,255,.8);opacity:.8}
+.promo-banner span{display:inline-block;margin-bottom:10px;padding:6px 10px;background:#10145a;color:#fff;border-radius:999px;text-transform:uppercase;letter-spacing:.15em;font-size:9px;font-weight:900}
+.promo-banner strong{display:block;max-width:520px;padding-right:34px;font-size:clamp(18px,1.7vw,24px);line-height:1.28;text-transform:uppercase;letter-spacing:.015em}
+@media(max-width:700px){.promo-banner{margin-top:26px;padding:21px 20px;transform:none}.promo-banner strong{padding-right:20px;font-size:17px}}
+@media(max-width:980px){.registration-intro .promo-banner{grid-column:1/-1}}
