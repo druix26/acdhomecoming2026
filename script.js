@@ -208,6 +208,16 @@ dialog.addEventListener('click', (event) => {
   if (event.target === dialog) dialog.close();
 });
 
+document.querySelectorAll('.promo-cta').forEach((button) => {
+  button.addEventListener('click', (event) => {
+    const fullNameField = document.querySelector('#name');
+    if (!fullNameField) return;
+    event.preventDefault();
+    fullNameField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    window.setTimeout(() => fullNameField.focus({ preventScroll: true }), 450);
+  });
+});
+
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const revealText = document.querySelectorAll(
   'main > section:not(.hero) :is(.section-number, .kicker, h2, h3, p, li, dt, dd, .form-heading span, .form-heading small)'
