@@ -27,6 +27,8 @@ alter table public.registrations enable row level security;
 create index if not exists registrations_status_idx on public.registrations (status);
 create index if not exists registrations_batch_year_idx on public.registrations (batch_year);
 create index if not exists registrations_submitted_at_idx on public.registrations (submitted_at desc);
+create unique index if not exists registrations_transaction_reference_unique_idx
+  on public.registrations (lower(btrim(transaction_reference)));
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (

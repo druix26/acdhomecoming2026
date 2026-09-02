@@ -127,11 +127,18 @@ function showStep(index) {
 }
 
 function validateStep() {
+  steps[currentStep].querySelectorAll('.field-error').forEach((message) => message.remove());
   const fields = [...steps[currentStep].querySelectorAll('input, select, textarea')];
   const invalid = fields.find((field) => !field.checkValidity());
   if (invalid) {
-    invalid.reportValidity();
-    invalid.focus();
+    const field = invalid.closest('.field') || invalid.parentElement;
+    const message = document.createElement('p');
+    message.className = 'field-error';
+    message.setAttribute('role', 'alert');
+    message.textContent = invalid.type === 'radio'
+      ? 'Please select one of these options.'
+      : invalid.validationMessage;
+    field.append(message);
     return false;
   }
   return true;
@@ -148,6 +155,8 @@ attendeeSelect.addEventListener('change', () => {
   updatePaymentSummary();
 });
 form.querySelectorAll('input[name="registrationType"]').forEach((input) => input.addEventListener('change', syncRegistrationType));
+form.addEventListener('input', (event) => event.target.closest('.field')?.querySelector('.field-error')?.remove());
+form.addEventListener('change', (event) => event.target.closest('.field')?.querySelector('.field-error')?.remove());
 addGuestButton.addEventListener('click', () => {
   guestRows.querySelector('.empty-guests')?.remove();
   guestRows.append(guestRow());
@@ -206,6 +215,16 @@ document.querySelector('.dialog-close').addEventListener('click', () => dialog.c
 document.querySelector('.dialog-done').addEventListener('click', () => dialog.close());
 dialog.addEventListener('click', (event) => {
   if (event.target === dialog) dialog.close();
+});
+
+document.querySelectorAll('.promo-cta').forEach((button) => {
+  button.addEventListener('click', (event) => {
+    const fullNameField = document.querySelector('#name');
+    if (!fullNameField) return;
+    event.preventDefault();
+    fullNameField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    window.setTimeout(() => fullNameField.focus({ preventScroll: true }), 450);
+  });
 });
 
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
