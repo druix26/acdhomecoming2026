@@ -208,6 +208,37 @@ document.querySelector('#proof').addEventListener('change', (event) => {
   document.querySelector('#upload-title').textContent = file ? file.name : 'Choose receipt file';
 });
 
+function populateRegistrationDetails(formData, result) {
+  const guests = formData.getAll('guestNames[]').map(String).filter(Boolean);
+  const proof = formData.get('proof');
+  const details = [
+    ['Confirmation code', result.reference],
+    ['Full name', formData.get('name')],
+    ['Batch / graduation year', formData.get('batch')],
+    ['Mobile number', formData.get('phone')],
+    ['Email address', formData.get('email')],
+    ['Current city / country', formData.get('location') || 'Not provided'],
+    ['Registration type', formData.get('registrationType')],
+    ['Total attendees', formData.get('attendees')],
+    ['Guest names', guests.length ? guests.join(', ') : 'None'],
+    ['Payment method', formData.get('paymentMethod')],
+    ['Name used for payment', formData.get('paymentName')],
+    ['Amount paid', formData.get('amountPaid')],
+    ['Date of payment', formData.get('paymentDate')],
+    ['Transaction / reference number', formData.get('transactionNumber')],
+    ['Proof of payment', proof instanceof File ? proof.name : 'Received'],
+  ];
+  const list = document.querySelector('#registration-details');
+  list.replaceChildren();
+  details.forEach(([label, value]) => {
+    const term = document.createElement('dt');
+    const description = document.createElement('dd');
+    term.textContent = label;
+    description.textContent = String(value || '—');
+    list.append(term, description);
+  });
+}
+
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
   if (!validateStep()) return;
@@ -232,6 +263,7 @@ form.addEventListener('submit', async (event) => {
     if (!response.ok || !result.success) throw new Error(result.error || 'Submission failed.');
     localStorage.setItem('acdHomecomingRegistration', JSON.stringify({ reference: result.reference, status: result.status, submittedAt: new Date().toISOString() }));
     document.querySelector('#reference-number').textContent = result.reference;
+    populateRegistrationDetails(formData, result);
     dialog.showModal();
     form.reset();
     attendeeSelect.disabled = false;

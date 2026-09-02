@@ -1,4 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { Resend } from 'npm:resend@6.25.0';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -33,8 +34,9 @@ async function sendRegistrationConfirmation(registration: Record<string, unknown
     html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#17213b;max-width:640px;margin:auto"><h1 style="font-size:28px">Registration received</h1><p>Hello ${escapeHtml(registration.full_name)},</p><p>We received your registration and proof of payment for the <strong>ACD Grand Alumni Homecoming 2026</strong>.</p><div style="background:#eef4ff;border:1px solid #c7d7fe;padding:18px 20px;border-radius:8px;margin:22px 0"><span style="font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#475467">Confirmation code</span><strong style="display:block;font-size:24px;letter-spacing:.08em;color:#1e3a8a">${escapeHtml(registration.reference)}</strong></div><table role="presentation" style="width:100%;border-collapse:collapse;background:#fff;border:1px solid #e5e7eb">${htmlDetails}</table><p style="margin-top:22px">Your registration will be <strong>confirmed</strong> after the Homecoming Committee verifies your payment. Keep this email and confirmation code for your records.</p><p><strong>Sama-Sama Tayo</strong><br>ACD Grand Alumni Homecoming 2026</p></div>`,
   };
   const replyTo = Deno.env.get('RESEND_REPLY_TO_EMAIL'); if (replyTo) payload.reply_to = replyTo;
-  const response = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'Idempotency-Key': `registration-${registration.reference}`, 'User-Agent': 'acd-homecoming-2026/1.0' }, body: JSON.stringify(payload) });
-  if (!response.ok) throw new Error(`Confirmation email failed (${response.status}): ${await response.text()}`);
+  const resend = new Resend(apiKey);
+  const { error } = await resend.emails.send(payload as Parameters<typeof resend.emails.send>[0], { idempotencyKey: `registration-${registration.reference}` });
+  if (error) throw new Error(`Confirmation email failed: ${error.message}`);
   return true;
 }
 
