@@ -14,6 +14,9 @@ const escapeHtml = (value: unknown) => String(value).replace(/[&<>'"]/g, (charac
 async function sendRegistrationConfirmation(registration: Record<string, unknown>) {
   const apiKey = Deno.env.get('RESEND_API_KEY'); const from = Deno.env.get('RESEND_FROM_EMAIL');
   if (!apiKey || !from) { console.warn('Confirmation email skipped: Resend is not configured.'); return false; }
+  const senderEmail = from.match(/<([^<>]+)>/)?.[1]?.trim() || from.trim();
+  const senderDomain = senderEmail.split('@')[1];
+  if (!senderDomain) throw new Error('RESEND_FROM_EMAIL must contain a valid email address.');
   const attendeeCount = Number(registration.total_attendees || 1);
   const amount = Number(registration.amount_paid || 0).toLocaleString('en-PH', { style: 'currency', currency: 'PHP' });
   const guests = Array.isArray(registration.guest_names) && registration.guest_names.length ? registration.guest_names.join(', ') : 'None';
@@ -29,14 +32,32 @@ async function sendRegistrationConfirmation(registration: Record<string, unknown
   const textDetails = details.map(([label, value]) => `${label}: ${String(value || '—')}`).join('\n');
   const htmlDetails = details.map(([label, value]) => `<tr><td style="padding:7px 12px;color:#667085;border-bottom:1px solid #e5e7eb">${escapeHtml(label)}</td><td style="padding:7px 12px;font-weight:600;border-bottom:1px solid #e5e7eb">${escapeHtml(value || '—')}</td></tr>`).join('');
   const payload: Record<string, unknown> = {
-    from, to: [registration.email_address], subject: `Registration received — Confirmation code ${registration.reference}`,
+    from: `ACD Admin <no-reply@${senderDomain}>`, to: [registration.email_address], subject: 'ACD Payment Successful',
     text: `Hello ${registration.full_name},\n\nWe received your ACD Grand Alumni Homecoming 2026 registration and proof of payment.\n\n${textDetails}\n\nYour registration will be confirmed after the Homecoming Committee verifies your payment. Keep this email and confirmation code for your records.\n\nSama-Sama Tayo — ACD Grand Alumni Homecoming 2026`,
     html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#17213b;max-width:640px;margin:auto"><h1 style="font-size:28px">Registration received</h1><p>Hello ${escapeHtml(registration.full_name)},</p><p>We received your registration and proof of payment for the <strong>ACD Grand Alumni Homecoming 2026</strong>.</p><div style="background:#eef4ff;border:1px solid #c7d7fe;padding:18px 20px;border-radius:8px;margin:22px 0"><span style="font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#475467">Confirmation code</span><strong style="display:block;font-size:24px;letter-spacing:.08em;color:#1e3a8a">${escapeHtml(registration.reference)}</strong></div><table role="presentation" style="width:100%;border-collapse:collapse;background:#fff;border:1px solid #e5e7eb">${htmlDetails}</table><p style="margin-top:22px">Your registration will be <strong>confirmed</strong> after the Homecoming Committee verifies your payment. Keep this email and confirmation code for your records.</p><p><strong>Sama-Sama Tayo</strong><br>ACD Grand Alumni Homecoming 2026</p></div>`,
   };
-  const replyTo = Deno.env.get('RESEND_REPLY_TO_EMAIL'); if (replyTo) payload.reply_to = replyTo;
   const resend = new Resend(apiKey);
   const { error } = await resend.emails.send(payload as Parameters<typeof resend.emails.send>[0], { idempotencyKey: `registration-${registration.reference}` });
   if (error) throw new Error(`Confirmation email failed: ${error.message}`);
+  return true;
+}
+
+async function sendConfirmedRegistrationEmail(registration: Record<string, unknown>) {
+  const apiKey = Deno.env.get('RESEND_API_KEY'); const from = Deno.env.get('RESEND_FROM_EMAIL');
+  if (!apiKey || !from) throw new Error('Resend is not configured.');
+  const senderEmail = from.match(/<([^<>]+)>/)?.[1]?.trim() || from.trim();
+  const senderDomain = senderEmail.split('@')[1];
+  if (!senderDomain) throw new Error('RESEND_FROM_EMAIL must contain a valid email address.');
+  const guests = Array.isArray(registration.guest_names) && registration.guest_names.length ? registration.guest_names.map(String) : [];
+  const guestText = guests.length ? guests.map((guest) => `- ${guest}`).join('\n') : '- No guests';
+  const guestHtml = guests.length ? guests.map((guest) => `<li>${escapeHtml(guest)}</li>`).join('') : '<li>No guests</li>';
+  const resend = new Resend(apiKey);
+  const { error } = await resend.emails.send({
+    from: `ACD Admin <no-reply@${senderDomain}>`, to: [String(registration.email_address)], subject: 'ACD Registration Confirmed',
+    text: `Your ACD Grand Alumni Homecoming 2026 registration is confirmed.\n\nConfirmation ID: ${registration.reference}\nEvent date: December 12, 2026\nGuests:\n${guestText}`,
+    html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#17213b;max-width:600px;margin:auto"><h1 style="font-size:28px">Registration confirmed</h1><p>Your registration for the <strong>ACD Grand Alumni Homecoming 2026</strong> is confirmed.</p><p><strong>Confirmation ID:</strong> ${escapeHtml(registration.reference)}<br><strong>Event date:</strong> December 12, 2026</p><p><strong>Guests:</strong></p><ul>${guestHtml}</ul></div>`,
+  }, { idempotencyKey: `confirmed-${registration.reference}` });
+  if (error) throw new Error(`Confirmed-registration email failed: ${error.message}`);
   return true;
 }
 
@@ -96,8 +117,19 @@ Deno.serve(async (request) => {
     const expected = await adminToken();
     const supplied = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '') || '';
     if (!expected || !safeEqual(supplied, expected)) return json({ error: 'Unauthorized.' }, 401);
-    const { error } = await supabase.from('registrations').update({ status: 'Confirmed' }).eq('id', Number(confirmationMatch[1]));
-    return error ? json({ error: 'Could not confirm registration.' }, 502) : json({ success: true, status: 'Confirmed' });
+    const id = Number(confirmationMatch[1]);
+    const current = await supabase.from('registrations').select('*').eq('id', id).single();
+    if (current.error || !current.data) return json({ error: 'Could not load registration.' }, current.error?.code === 'PGRST116' ? 404 : 502);
+    const previousStatus = current.data.status;
+    const updated = await supabase.from('registrations').update({ status: 'Confirmed' }).eq('id', id);
+    if (updated.error) return json({ error: 'Could not confirm registration.' }, 502);
+    try {
+      await sendConfirmedRegistrationEmail({ ...current.data, status: 'Confirmed' });
+      return json({ success: true, status: 'Confirmed', emailSent: true });
+    } catch (error) {
+      await supabase.from('registrations').update({ status: previousStatus }).eq('id', id);
+      console.error(error); return json({ error: 'Could not send the confirmation email. Registration was not confirmed.' }, 502);
+    }
   }
 
   if (path === '/check-transaction-reference' && request.method === 'POST') {

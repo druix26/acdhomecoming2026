@@ -33,7 +33,9 @@ async function sendRegistrationConfirmation(registration: Record<string, unknown
     console.warn("Confirmation email skipped: RESEND_API_KEY or RESEND_FROM_EMAIL is not configured.");
     return false;
   }
-  const replyTo = Bun.env.RESEND_REPLY_TO_EMAIL;
+  const senderEmail = from.match(/<([^<>]+)>/)?.[1]?.trim() || from.trim();
+  const senderDomain = senderEmail.split("@")[1];
+  if (!senderDomain) throw new Error("RESEND_FROM_EMAIL must contain a valid email address.");
   const attendeeCount = Number(registration.total_attendees || 1);
   const amount = Number(registration.amount_paid || 0).toLocaleString("en-PH", { style: "currency", currency: "PHP" });
   const guests = Array.isArray(registration.guest_names) && registration.guest_names.length
@@ -60,18 +62,41 @@ async function sendRegistrationConfirmation(registration: Record<string, unknown
   const textDetails = details.map(([label, value]) => `${label}: ${String(value || "—")}`).join("\n");
   const htmlDetails = details.map(([label, value]) => `<tr><td style="padding:7px 12px;color:#667085;border-bottom:1px solid #e5e7eb">${escapeHtml(label)}</td><td style="padding:7px 12px;font-weight:600;border-bottom:1px solid #e5e7eb">${escapeHtml(value || "—")}</td></tr>`).join("");
   const payload: Record<string, unknown> = {
-    from,
+    from: `ACD Admin <no-reply@${senderDomain}>`,
     to: [registration.email_address],
-    subject: `Registration received — Confirmation code ${registration.reference}`,
+    subject: "ACD Payment Successful",
     text: `Hello ${registration.full_name},\n\nWe received your ACD Grand Alumni Homecoming 2026 registration and proof of payment.\n\n${textDetails}\n\nYour registration will be confirmed after the Homecoming Committee verifies your payment. Keep this email and confirmation code for your records.\n\nSama-Sama Tayo — ACD Grand Alumni Homecoming 2026`,
     html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#17213b;max-width:640px;margin:auto"><h1 style="font-size:28px">Registration received</h1><p>Hello ${escapeHtml(registration.full_name)},</p><p>We received your registration and proof of payment for the <strong>ACD Grand Alumni Homecoming 2026</strong>.</p><div style="background:#eef4ff;border:1px solid #c7d7fe;padding:18px 20px;border-radius:8px;margin:22px 0"><span style="font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#475467">Confirmation code</span><strong style="display:block;font-size:24px;letter-spacing:.08em;color:#1e3a8a">${escapeHtml(registration.reference)}</strong></div><table role="presentation" style="width:100%;border-collapse:collapse;background:#fff;border:1px solid #e5e7eb">${htmlDetails}</table><p style="margin-top:22px">Your registration will be <strong>confirmed</strong> after the Homecoming Committee verifies your payment. Keep this email and confirmation code for your records.</p><p><strong>Sama-Sama Tayo</strong><br>ACD Grand Alumni Homecoming 2026</p></div>`,
   };
-  if (replyTo) payload.reply_to = replyTo;
   const resend = new Resend(apiKey);
   const { error } = await resend.emails.send(payload as Parameters<typeof resend.emails.send>[0], {
     idempotencyKey: `registration-${registration.reference}`,
   });
   if (error) throw new Error(`Confirmation email failed: ${error.message}`);
+  return true;
+}
+
+async function sendConfirmedRegistrationEmail(registration: Record<string, unknown>) {
+  const apiKey = Bun.env.RESEND_API_KEY;
+  const from = Bun.env.RESEND_FROM_EMAIL;
+  if (!apiKey || !from) throw new Error("RESEND_API_KEY or RESEND_FROM_EMAIL is not configured.");
+  const senderEmail = from.match(/<([^<>]+)>/)?.[1]?.trim() || from.trim();
+  const senderDomain = senderEmail.split("@")[1];
+  if (!senderDomain) throw new Error("RESEND_FROM_EMAIL must contain a valid email address.");
+  const guests = Array.isArray(registration.guest_names) && registration.guest_names.length
+    ? registration.guest_names.map(String)
+    : [];
+  const guestText = guests.length ? guests.map((guest) => `- ${guest}`).join("\n") : "- No guests";
+  const guestHtml = guests.length ? guests.map((guest) => `<li>${escapeHtml(guest)}</li>`).join("") : "<li>No guests</li>";
+  const resend = new Resend(apiKey);
+  const { error } = await resend.emails.send({
+    from: `ACD Admin <no-reply@${senderDomain}>`,
+    to: [String(registration.email_address)],
+    subject: "ACD Registration Confirmed",
+    text: `Your ACD Grand Alumni Homecoming 2026 registration is confirmed.\n\nConfirmation ID: ${registration.reference}\nEvent date: December 12, 2026\nGuests:\n${guestText}`,
+    html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#17213b;max-width:600px;margin:auto"><h1 style="font-size:28px">Registration confirmed</h1><p>Your registration for the <strong>ACD Grand Alumni Homecoming 2026</strong> is confirmed.</p><p><strong>Confirmation ID:</strong> ${escapeHtml(registration.reference)}<br><strong>Event date:</strong> December 12, 2026</p><p><strong>Guests:</strong></p><ul>${guestHtml}</ul></div>`,
+  }, { idempotencyKey: `confirmed-${registration.reference}` });
+  if (error) throw new Error(`Confirmed-registration email failed: ${error.message}`);
   return true;
 }
 
@@ -150,13 +175,30 @@ async function handleAdminApi(request: Request, url: URL) {
   if (confirmationMatch && request.method === "PATCH") {
     const { url: supabaseUrl, key } = supabaseConfig();
     if (!supabaseUrl || !key) return Response.json({ error: "Supabase is not configured." }, { status: 503 });
+    const headers = { apikey: key, Authorization: `Bearer ${key}` };
+    const registrationResponse = await fetch(`${supabaseUrl}/rest/v1/registrations?select=*&id=eq.${confirmationMatch[1]}&limit=1`, { headers });
+    if (!registrationResponse.ok) return Response.json({ error: "Could not load registration." }, { status: 502 });
+    const registration = (await registrationResponse.json())[0];
+    if (!registration) return Response.json({ error: "Registration not found." }, { status: 404 });
+    const previousStatus = registration.status;
     const response = await fetch(`${supabaseUrl}/rest/v1/registrations?id=eq.${confirmationMatch[1]}`, {
       method: "PATCH",
-      headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json", Prefer: "return=minimal" },
+      headers: { ...headers, "Content-Type": "application/json", Prefer: "return=minimal" },
       body: JSON.stringify({ status: "Confirmed" }),
     });
     if (!response.ok) return Response.json({ error: "Could not confirm registration." }, { status: 502 });
-    return Response.json({ success: true, status: "Confirmed" });
+    try {
+      await sendConfirmedRegistrationEmail({ ...registration, status: "Confirmed" });
+      return Response.json({ success: true, status: "Confirmed", emailSent: true });
+    } catch (error) {
+      await fetch(`${supabaseUrl}/rest/v1/registrations?id=eq.${confirmationMatch[1]}`, {
+        method: "PATCH",
+        headers: { ...headers, "Content-Type": "application/json", Prefer: "return=minimal" },
+        body: JSON.stringify({ status: previousStatus }),
+      });
+      console.error("Registration confirmation email failed:", error);
+      return Response.json({ error: "Could not send the confirmation email. Registration was not confirmed." }, { status: 502 });
+    }
   }
 
   return new Response("Not found", { status: 404 });
