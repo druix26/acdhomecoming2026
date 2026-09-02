@@ -108,11 +108,16 @@ h1 em{font-family:inherit;color:var(--coral);font-style:normal;text-shadow:0 4px
 .form-step legend{color:#17213b}.form-step legend small{color:#a82b90}.form-progress li span{color:#17213b}.form-progress li.active,.form-progress li.complete{color:#4a3197}
 .form-progress li.active span{border-color:#8e31a3;box-shadow:0 0 0 5px #f4e7f6}.form-progress li.complete span{background:#4b39a3;border-color:#4b39a3}
 .payment-total{background:linear-gradient(135deg,#141a67,#44309a)}
-dialog{background:#fff;color:#111827!important}
+dialog{background:#fff;color:#111827!important;max-height:calc(100vh - 28px);overflow:auto}
 dialog :is(h2,p,strong,b){color:#111827!important}
 dialog .kicker{color:#762b95!important}
 dialog>p:not(.kicker){color:#24304a!important;font-size:15px;line-height:1.65}
 dialog h2{color:#111827!important;font-size:clamp(36px,8vw,52px);line-height:1.05;margin-top:8px}
+dialog .confirmation-details{margin:22px 0;padding:20px;text-align:left;background:#f4f6fb;border:1px solid #d8deeb;border-radius:12px}
+dialog .confirmation-details h3{margin:0 0 14px;color:#111827;font-size:18px}
+dialog .confirmation-details dl{display:grid;grid-template-columns:minmax(120px,.8fr) minmax(0,1.2fr);gap:8px 16px;margin:0}
+dialog .confirmation-details dt{color:#59647a;font-size:12px}
+dialog .confirmation-details dd{margin:0;color:#111827;font-size:12px;font-weight:700;overflow-wrap:anywhere}
 dialog .confirmation-label{display:block;color:#475467;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;margin-top:22px}
 dialog #reference-number{color:#1e3a8a!important;font-weight:800}
 footer{background:linear-gradient(110deg,#8a278e,#bc00ad);color:#fff;border:0;border-top:4px solid var(--cyan)}
@@ -120,6 +125,7 @@ footer{background:linear-gradient(110deg,#8a278e,#bc00ad);color:#fff;border:0;bo
 footer p,footer>a{color:#fff}
 @media(max-width:980px){.hero{grid-template-columns:1fr;padding-bottom:190px}.hero-badges{position:absolute;right:50%;bottom:0;transform:translateX(50%);margin:0}.hero-copy{padding-inline:24px}}
 @media(max-width:700px){.site-header{height:84px;padding:10px 16px}.brand{padding:5px 9px;border-radius:12px}.brand>img{width:180px;height:48px}.hero{padding:70px 18px 180px}.hero:before{inset:20px 10px;border-radius:32px}.hero-copy{padding:22px 14px}h1{font-size:46px}.event-strip{padding:4px 14px}.hero-badges{transform:translateX(50%)}.section{padding-top:78px;padding-bottom:78px}.experience-card,.registration form{border-radius:20px}nav{background:#8f258d}.menu-button{position:relative;z-index:3}}
+@media(max-width:520px){dialog .confirmation-details dl{grid-template-columns:1fr;gap:3px}dialog .confirmation-details dd{margin-bottom:8px}}
 
 /* Keep event details and presenter marks on one visual baseline. */
 .hero{grid-template-columns:1fr}
