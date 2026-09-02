@@ -108,12 +108,12 @@ h1 em{font-family:inherit;color:var(--coral);font-style:normal;text-shadow:0 4px
 .form-step legend{color:#17213b}.form-step legend small{color:#a82b90}.form-progress li span{color:#17213b}.form-progress li.active,.form-progress li.complete{color:#4a3197}
 .form-progress li.active span{border-color:#8e31a3;box-shadow:0 0 0 5px #f4e7f6}.form-progress li.complete span{background:#4b39a3;border-color:#4b39a3}
 .payment-total{background:linear-gradient(135deg,#141a67,#44309a)}
-dialog{background:#fff;color:#17213b}
-dialog :is(h2,p,strong,b){color:#17213b}
-dialog .kicker{color:#762b95}
-dialog>p:not(.kicker){color:#4f5873;font-size:15px;line-height:1.65}
-dialog h2{color:#17213b;font-size:clamp(36px,8vw,52px);line-height:1.05;margin-top:8px}
-dialog #reference-number{color:#2736a5;font-weight:800}
+dialog{background:#fff;color:#111827!important}
+dialog :is(h2,p,strong,b){color:#111827!important}
+dialog .kicker{color:#762b95!important}
+dialog>p:not(.kicker){color:#24304a!important;font-size:15px;line-height:1.65}
+dialog h2{color:#111827!important;font-size:clamp(36px,8vw,52px);line-height:1.05;margin-top:8px}
+dialog #reference-number{color:#1e3a8a!important;font-weight:800}
 footer{background:linear-gradient(110deg,#8a278e,#bc00ad);color:#fff;border:0;border-top:4px solid var(--cyan)}
 .footer-mark{background:#fff;border-radius:16px;padding:8px 14px}.footer-mark strong{color:#27236c}.footer-mark span{color:#66658a}
 footer p,footer>a{color:#fff}
