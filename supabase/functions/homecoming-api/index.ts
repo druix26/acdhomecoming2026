@@ -8,6 +8,24 @@ const cors = {
 const encoder = new TextEncoder();
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
 
+const escapeHtml = (value: unknown) => String(value).replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[character]!);
+
+async function sendRegistrationConfirmation(registration: Record<string, unknown>) {
+  const apiKey = Deno.env.get('RESEND_API_KEY'); const from = Deno.env.get('RESEND_FROM_EMAIL');
+  if (!apiKey || !from) { console.warn('Confirmation email skipped: Resend is not configured.'); return false; }
+  const attendeeCount = Number(registration.total_attendees || 1);
+  const amount = Number(registration.amount_paid || 0).toLocaleString('en-PH', { style: 'currency', currency: 'PHP' });
+  const payload: Record<string, unknown> = {
+    from, to: [registration.email_address], subject: `Registration received — ${registration.reference}`,
+    text: `Hello ${registration.full_name},\n\nWe received your ACD Grand Alumni Homecoming 2026 registration.\n\nRegistration reference: ${registration.reference}\nStatus: ${registration.status}\nAttendees: ${attendeeCount}\nAmount paid: ${amount}\n\nYour registration will be confirmed after the Homecoming Committee verifies your payment. Please keep this email and your payment receipt.\n\nSama-Sama Tayo — ACD Grand Alumni Homecoming 2026`,
+    html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#17213b;max-width:600px"><h1 style="font-size:28px">Registration received</h1><p>Hello ${escapeHtml(registration.full_name)},</p><p>We received your registration for the <strong>ACD Grand Alumni Homecoming 2026</strong>.</p><div style="background:#f6f4f0;padding:20px;border-radius:6px"><p><strong>Registration reference:</strong> ${escapeHtml(registration.reference)}</p><p><strong>Status:</strong> ${escapeHtml(registration.status)}</p><p><strong>Attendees:</strong> ${attendeeCount}</p><p><strong>Amount paid:</strong> ${escapeHtml(amount)}</p></div><p>Your registration will be confirmed after the Homecoming Committee verifies your payment. Please keep this email and your payment receipt.</p><p><strong>Sama-Sama Tayo</strong><br>ACD Grand Alumni Homecoming 2026</p></div>`,
+  };
+  const replyTo = Deno.env.get('RESEND_REPLY_TO_EMAIL'); if (replyTo) payload.reply_to = replyTo;
+  const response = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'Idempotency-Key': `registration-${registration.reference}`, 'User-Agent': 'acd-homecoming-2026/1.0' }, body: JSON.stringify(payload) });
+  if (!response.ok) throw new Error(`Confirmation email failed (${response.status}): ${await response.text()}`);
+  return true;
+}
+
 function safeEqual(left: string, right: string) {
   const a = encoder.encode(left); const b = encoder.encode(right);
   if (a.length !== b.length) return false;
@@ -75,6 +93,11 @@ Deno.serve(async (request) => {
     if (proof.size > 10 * 1024 * 1024) return json({ error: 'Proof of payment must be 10 MB or smaller.' }, 400);
     if (!['image/jpeg', 'image/png', 'application/pdf'].includes(proof.type)) return json({ error: 'Proof of payment must be a JPG, PNG, or PDF.' }, 400);
     const value = (name: string) => String(form.get(name) || '');
+    const transactionReference = value('transactionNumber').trim().toUpperCase();
+    if (!transactionReference) return json({ error: 'Transaction / reference number is required.' }, 400);
+    const duplicate = await supabase.from('registrations').select('id').eq('transaction_reference', transactionReference).limit(1);
+    if (duplicate.error) throw duplicate.error;
+    if (duplicate.data?.length) return json({ error: 'This transaction / reference number has already been used.' }, 409);
     const reference = `ACD26-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
     const proofPath = `${reference}/${Date.now()}-${proof.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
     const uploaded = await supabase.storage.from(bucket).upload(proofPath, proof, { contentType: proof.type, upsert: false });
@@ -85,12 +108,19 @@ Deno.serve(async (request) => {
       registration_type: value('registrationType'), total_attendees: Number(value('attendees') || 1),
       guest_names: form.getAll('guestNames[]').map(String), payment_method: value('paymentMethod'), payment_name: value('paymentName'),
       amount_paid: Number(value('amountPaid').replace(/[^0-9.]/g, '')), payment_date: value('paymentDate') || null,
-      transaction_reference: value('transactionNumber'), proof_path: proofPath, proof_file_name: proof.name,
+      transaction_reference: transactionReference, proof_path: proofPath, proof_file_name: proof.name,
       payment_declaration: form.has('declaration'), data_consent: form.has('dataConsent'),
     };
     const inserted = await supabase.from('registrations').insert(registration);
-    if (inserted.error) { await supabase.storage.from(bucket).remove([proofPath]); throw inserted.error; }
-    return json({ success: true, reference, status: registration.status });
+    if (inserted.error) {
+      await supabase.storage.from(bucket).remove([proofPath]);
+      if (inserted.error.code === '23505') return json({ error: 'This transaction / reference number has already been used.' }, 409);
+      throw inserted.error;
+    }
+    let emailSent = false;
+    try { emailSent = await sendRegistrationConfirmation(registration); }
+    catch (emailError) { console.error('Registration saved, but confirmation email failed:', emailError); }
+    return json({ success: true, reference, status: registration.status, emailSent });
   } catch (error) {
     console.error(error); return json({ error: 'We could not save your registration. Please try again.' }, 502);
   }

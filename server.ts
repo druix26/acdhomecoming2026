@@ -20,6 +20,37 @@ function supabaseConfig() {
   };
 }
 
+function escapeHtml(value: unknown) {
+  return String(value).replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character]!);
+}
+
+async function sendRegistrationConfirmation(registration: Record<string, unknown>) {
+  const apiKey = Bun.env.RESEND_API_KEY;
+  const from = Bun.env.RESEND_FROM_EMAIL;
+  if (!apiKey || !from) {
+    console.warn("Confirmation email skipped: RESEND_API_KEY or RESEND_FROM_EMAIL is not configured.");
+    return false;
+  }
+  const replyTo = Bun.env.RESEND_REPLY_TO_EMAIL;
+  const attendeeCount = Number(registration.total_attendees || 1);
+  const amount = Number(registration.amount_paid || 0).toLocaleString("en-PH", { style: "currency", currency: "PHP" });
+  const payload: Record<string, unknown> = {
+    from,
+    to: [registration.email_address],
+    subject: `Registration received — ${registration.reference}`,
+    text: `Hello ${registration.full_name},\n\nWe received your ACD Grand Alumni Homecoming 2026 registration.\n\nRegistration reference: ${registration.reference}\nStatus: ${registration.status}\nAttendees: ${attendeeCount}\nAmount paid: ${amount}\n\nYour registration will be confirmed after the Homecoming Committee verifies your payment. Please keep this email and your payment receipt.\n\nSama-Sama Tayo — ACD Grand Alumni Homecoming 2026`,
+    html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#17213b;max-width:600px"><h1 style="font-size:28px">Registration received</h1><p>Hello ${escapeHtml(registration.full_name)},</p><p>We received your registration for the <strong>ACD Grand Alumni Homecoming 2026</strong>.</p><div style="background:#f6f4f0;padding:20px;border-radius:6px"><p><strong>Registration reference:</strong> ${escapeHtml(registration.reference)}</p><p><strong>Status:</strong> ${escapeHtml(registration.status)}</p><p><strong>Attendees:</strong> ${attendeeCount}</p><p><strong>Amount paid:</strong> ${escapeHtml(amount)}</p></div><p>Your registration will be confirmed after the Homecoming Committee verifies your payment. Please keep this email and your payment receipt.</p><p><strong>Sama-Sama Tayo</strong><br>ACD Grand Alumni Homecoming 2026</p></div>`,
+  };
+  if (replyTo) payload.reply_to = replyTo;
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json", "Idempotency-Key": `registration-${registration.reference}`, "User-Agent": "acd-homecoming-2026/1.0" },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) throw new Error(`Confirmation email failed (${response.status}): ${await response.text()}`);
+  return true;
+}
+
 function safeEqual(left: string, right: string) {
   const a = encoder.encode(left);
   const b = encoder.encode(right);
@@ -147,6 +178,19 @@ async function submitRegistration(request: Request) {
       Authorization: `Bearer ${serviceRoleKey}`,
     };
 
+    const transactionReference = String(fields.transactionNumber || "").trim().toUpperCase();
+    if (!transactionReference) {
+      return Response.json({ error: "Transaction / reference number is required." }, { status: 400 });
+    }
+    const duplicateResponse = await fetch(
+      `${supabaseUrl}/rest/v1/registrations?select=id&transaction_reference=eq.${encodeURIComponent(transactionReference)}&limit=1`,
+      { headers: supabaseHeaders },
+    );
+    if (!duplicateResponse.ok) throw new Error("Could not validate the transaction reference.");
+    if ((await duplicateResponse.json()).length) {
+      return Response.json({ error: "This transaction / reference number has already been used." }, { status: 409 });
+    }
+
     const uploadResponse = await fetch(`${supabaseUrl}/storage/v1/object/${bucket}/${proofPath}`, {
       method: "POST",
       headers: { ...supabaseHeaders, "Content-Type": proof.type, "x-upsert": "false" },
@@ -174,7 +218,7 @@ async function submitRegistration(request: Request) {
       payment_name: fields.paymentName || "",
       amount_paid: amountPaid,
       payment_date: fields.paymentDate || null,
-      transaction_reference: fields.transactionNumber || "",
+      transaction_reference: transactionReference,
       proof_path: proofPath,
       proof_file_name: proof.name,
       payment_declaration: Boolean(fields.declaration),
@@ -189,10 +233,20 @@ async function submitRegistration(request: Request) {
     if (!insertResponse.ok) {
       await fetch(`${supabaseUrl}/storage/v1/object/${bucket}/${proofPath}`, { method: "DELETE", headers: supabaseHeaders });
       const detail = await insertResponse.text();
+      if (insertResponse.status === 409 || detail.includes("registrations_transaction_reference_unique_idx")) {
+        return Response.json({ error: "This transaction / reference number has already been used." }, { status: 409 });
+      }
       throw new Error(`Supabase registration insert failed (${insertResponse.status}): ${detail}`);
     }
 
-    return Response.json({ success: true, reference, status: registration.status });
+    let emailSent = false;
+    try {
+      emailSent = await sendRegistrationConfirmation(registration);
+    } catch (emailError) {
+      console.error("Registration saved, but confirmation email failed:", emailError);
+    }
+
+    return Response.json({ success: true, reference, status: registration.status, emailSent });
   } catch (error) {
     console.error("Registration submission failed:", error);
     return Response.json({ error: "We could not save your registration. Please try again." }, { status: 502 });

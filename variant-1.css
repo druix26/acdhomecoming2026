@@ -141,3 +141,20 @@ footer p,footer>a{color:#fff}
   .experience-card li{display:grid;grid-template-columns:44px minmax(0,1fr);align-items:start;column-gap:0;line-height:1.4}
   .experience-card li span{width:auto;padding-top:3px}
 }
+/* Keep every registration-form label, value, note, and button black. */
+#registration-form,
+#registration-form *{color:#000!important}
+#registration-form input::placeholder,
+#registration-form textarea::placeholder{color:#000!important;opacity:1}
+
+/* Step 3 uses a dark summary panel, so its text stays light. */
+#registration-form .payment-total,
+#registration-form .payment-total *{color:#fff!important}
+
+/* Use white numbers only after a progress circle becomes filled violet. */
+#registration-form .form-progress li.complete span{color:#fff!important}
+
+/* Center custom choice validation without triggering the browser's moving popup. */
+#registration-form .choice-grid + .field-error{text-align:center;width:100%;margin:2px 0 0}
+#registration-form .choice-grid label{position:relative;overflow:hidden}
+#registration-form .choice-grid input{inset:0;width:100%;height:100%;margin:0;cursor:pointer}
