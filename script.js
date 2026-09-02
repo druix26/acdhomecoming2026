@@ -144,8 +144,48 @@ function validateStep() {
   return true;
 }
 
-nextButton.addEventListener('click', () => {
+async function validateTransactionReference() {
+  const input = document.querySelector('#transaction-number');
+  const field = input.closest('.field');
+  const originalText = nextButton.innerHTML;
+  nextButton.disabled = true;
+  nextButton.textContent = 'Checking reference…';
+  field.querySelector('.field-error')?.remove();
+
+  try {
+    const response = await fetch(`${window.ACD_API_BASE}/check-transaction-reference`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ transactionNumber: input.value }),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || 'Could not validate the transaction reference.');
+    if (result.duplicate) {
+      const message = document.createElement('p');
+      message.className = 'field-error';
+      message.setAttribute('role', 'alert');
+      message.textContent = 'This transaction / reference number has already been used.';
+      field.append(message);
+      input.focus();
+      return false;
+    }
+    return true;
+  } catch (error) {
+    const message = document.createElement('p');
+    message.className = 'field-error';
+    message.setAttribute('role', 'alert');
+    message.textContent = error.message || 'Could not validate the transaction reference. Please try again.';
+    field.append(message);
+    return false;
+  } finally {
+    nextButton.disabled = false;
+    nextButton.innerHTML = originalText;
+  }
+}
+
+nextButton.addEventListener('click', async () => {
   if (!validateStep()) return;
+  if (currentStep === 3 && !(await validateTransactionReference())) return;
   if (currentStep === steps.length - 1) form.requestSubmit();
   else showStep(currentStep + 1);
 });

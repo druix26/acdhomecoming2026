@@ -253,6 +253,30 @@ async function submitRegistration(request: Request) {
   }
 }
 
+async function checkTransactionReference(request: Request) {
+  const { url: supabaseUrl, key: serviceRoleKey } = supabaseConfig();
+  if (!supabaseUrl || !serviceRoleKey) {
+    return Response.json({ error: "Registration storage is not configured." }, { status: 503 });
+  }
+
+  try {
+    const body = await request.json();
+    const transactionReference = String(body.transactionNumber || "").trim().toUpperCase();
+    if (!transactionReference) {
+      return Response.json({ error: "Transaction / reference number is required." }, { status: 400 });
+    }
+    const response = await fetch(
+      `${supabaseUrl}/rest/v1/registrations?select=id&transaction_reference=eq.${encodeURIComponent(transactionReference)}&limit=1`,
+      { headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}` } },
+    );
+    if (!response.ok) throw new Error("Could not validate the transaction reference.");
+    return Response.json({ duplicate: (await response.json()).length > 0 });
+  } catch (error) {
+    console.error("Transaction reference validation failed:", error);
+    return Response.json({ error: "Could not validate the transaction reference. Please try again." }, { status: 502 });
+  }
+}
+
 async function listPublicRegistrants() {
   const { url: supabaseUrl, key } = supabaseConfig();
   if (!supabaseUrl || !key) return Response.json({ error: "Supabase is not configured." }, { status: 503 });
@@ -278,6 +302,10 @@ const server = Bun.serve({
     if (url.pathname === "/api/register") {
       if (request.method !== "POST") return new Response("Method not allowed", { status: 405 });
       return withCors(await submitRegistration(request));
+    }
+    if (url.pathname === "/api/check-transaction-reference") {
+      if (request.method !== "POST") return withCors(new Response("Method not allowed", { status: 405 }));
+      return withCors(await checkTransactionReference(request));
     }
     if (url.pathname.startsWith("/api/admin/")) return withCors(await handleAdminApi(request, url));
     const pathname = decodeURIComponent(url.pathname === "/" ? "/index.html" : url.pathname);

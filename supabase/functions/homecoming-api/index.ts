@@ -86,6 +86,19 @@ Deno.serve(async (request) => {
     return error ? json({ error: 'Could not confirm registration.' }, 502) : json({ success: true, status: 'Confirmed' });
   }
 
+  if (path === '/check-transaction-reference' && request.method === 'POST') {
+    try {
+      const body = await request.json();
+      const transactionReference = String(body.transactionNumber || '').trim().toUpperCase();
+      if (!transactionReference) return json({ error: 'Transaction / reference number is required.' }, 400);
+      const duplicate = await supabase.from('registrations').select('id').eq('transaction_reference', transactionReference).limit(1);
+      if (duplicate.error) throw duplicate.error;
+      return json({ duplicate: Boolean(duplicate.data?.length) });
+    } catch (error) {
+      console.error(error); return json({ error: 'Could not validate the transaction reference. Please try again.' }, 502);
+    }
+  }
+
   if (path !== '/register' || request.method !== 'POST') return json({ error: 'Not found.' }, 404);
   try {
     const form = await request.formData(); const proof = form.get('proof');
