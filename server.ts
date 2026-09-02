@@ -34,12 +34,35 @@ async function sendRegistrationConfirmation(registration: Record<string, unknown
   const replyTo = Bun.env.RESEND_REPLY_TO_EMAIL;
   const attendeeCount = Number(registration.total_attendees || 1);
   const amount = Number(registration.amount_paid || 0).toLocaleString("en-PH", { style: "currency", currency: "PHP" });
+  const guests = Array.isArray(registration.guest_names) && registration.guest_names.length
+    ? registration.guest_names.join(", ")
+    : "None";
+  const details = [
+    ["Confirmation code", registration.reference],
+    ["Status", registration.status],
+    ["Full name", registration.full_name],
+    ["Batch / graduation year", registration.batch_year],
+    ["Mobile number", registration.mobile_number],
+    ["Email address", registration.email_address],
+    ["Current city / country", registration.current_location || "Not provided"],
+    ["Registration type", registration.registration_type],
+    ["Total attendees", attendeeCount],
+    ["Guest names", guests],
+    ["Payment method", registration.payment_method],
+    ["Name used for payment", registration.payment_name],
+    ["Amount paid", amount],
+    ["Date of payment", registration.payment_date],
+    ["Transaction / reference number", registration.transaction_reference],
+    ["Proof of payment", registration.proof_file_name ? `Received (${registration.proof_file_name})` : "Received"],
+  ];
+  const textDetails = details.map(([label, value]) => `${label}: ${String(value || "—")}`).join("\n");
+  const htmlDetails = details.map(([label, value]) => `<tr><td style="padding:7px 12px;color:#667085;border-bottom:1px solid #e5e7eb">${escapeHtml(label)}</td><td style="padding:7px 12px;font-weight:600;border-bottom:1px solid #e5e7eb">${escapeHtml(value || "—")}</td></tr>`).join("");
   const payload: Record<string, unknown> = {
     from,
     to: [registration.email_address],
-    subject: `Registration received — ${registration.reference}`,
-    text: `Hello ${registration.full_name},\n\nWe received your ACD Grand Alumni Homecoming 2026 registration.\n\nRegistration reference: ${registration.reference}\nStatus: ${registration.status}\nAttendees: ${attendeeCount}\nAmount paid: ${amount}\n\nYour registration will be confirmed after the Homecoming Committee verifies your payment. Please keep this email and your payment receipt.\n\nSama-Sama Tayo — ACD Grand Alumni Homecoming 2026`,
-    html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#17213b;max-width:600px"><h1 style="font-size:28px">Registration received</h1><p>Hello ${escapeHtml(registration.full_name)},</p><p>We received your registration for the <strong>ACD Grand Alumni Homecoming 2026</strong>.</p><div style="background:#f6f4f0;padding:20px;border-radius:6px"><p><strong>Registration reference:</strong> ${escapeHtml(registration.reference)}</p><p><strong>Status:</strong> ${escapeHtml(registration.status)}</p><p><strong>Attendees:</strong> ${attendeeCount}</p><p><strong>Amount paid:</strong> ${escapeHtml(amount)}</p></div><p>Your registration will be confirmed after the Homecoming Committee verifies your payment. Please keep this email and your payment receipt.</p><p><strong>Sama-Sama Tayo</strong><br>ACD Grand Alumni Homecoming 2026</p></div>`,
+    subject: `Registration received — Confirmation code ${registration.reference}`,
+    text: `Hello ${registration.full_name},\n\nWe received your ACD Grand Alumni Homecoming 2026 registration and proof of payment.\n\n${textDetails}\n\nYour registration will be confirmed after the Homecoming Committee verifies your payment. Keep this email and confirmation code for your records.\n\nSama-Sama Tayo — ACD Grand Alumni Homecoming 2026`,
+    html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#17213b;max-width:640px;margin:auto"><h1 style="font-size:28px">Registration received</h1><p>Hello ${escapeHtml(registration.full_name)},</p><p>We received your registration and proof of payment for the <strong>ACD Grand Alumni Homecoming 2026</strong>.</p><div style="background:#eef4ff;border:1px solid #c7d7fe;padding:18px 20px;border-radius:8px;margin:22px 0"><span style="font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#475467">Confirmation code</span><strong style="display:block;font-size:24px;letter-spacing:.08em;color:#1e3a8a">${escapeHtml(registration.reference)}</strong></div><table role="presentation" style="width:100%;border-collapse:collapse;background:#fff;border:1px solid #e5e7eb">${htmlDetails}</table><p style="margin-top:22px">Your registration will be <strong>confirmed</strong> after the Homecoming Committee verifies your payment. Keep this email and confirmation code for your records.</p><p><strong>Sama-Sama Tayo</strong><br>ACD Grand Alumni Homecoming 2026</p></div>`,
   };
   if (replyTo) payload.reply_to = replyTo;
   const response = await fetch("https://api.resend.com/emails", {
