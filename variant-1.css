@@ -113,6 +113,7 @@ dialog :is(h2,p,strong,b){color:#111827!important}
 dialog .kicker{color:#762b95!important}
 dialog>p:not(.kicker){color:#24304a!important;font-size:15px;line-height:1.65}
 dialog h2{color:#111827!important;font-size:clamp(36px,8vw,52px);line-height:1.05;margin-top:8px}
+dialog .confirmation-label{display:block;color:#475467;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;margin-top:22px}
 dialog #reference-number{color:#1e3a8a!important;font-weight:800}
 footer{background:linear-gradient(110deg,#8a278e,#bc00ad);color:#fff;border:0;border-top:4px solid var(--cyan)}
 .footer-mark{background:#fff;border-radius:16px;padding:8px 14px}.footer-mark strong{color:#27236c}.footer-mark span{color:#66658a}
