@@ -30,7 +30,8 @@ const progressItems = [...form.querySelectorAll('.form-progress li')];
 const nextButton = form.querySelector('.next-button');
 const backButton = form.querySelector('.back-button');
 const submitButton = nextButton;
-const feePerPerson = 600;
+const regularFeeStart = new Date('2026-11-11T00:00:00+08:00');
+const registrationFeePerPerson = (now = new Date()) => now >= regularFeeStart ? 700 : 600;
 let currentStep = 0;
 
 const batchSelect = document.querySelector('#batch');
@@ -104,7 +105,9 @@ function syncRegistrationType() {
 
 function updatePaymentSummary() {
   const count = attendeeCount();
+  const feePerPerson = registrationFeePerPerson();
   const amount = count * feePerPerson;
+  document.querySelector('.payment-total > strong').innerHTML = `₱${feePerPerson.toLocaleString()} <small>per person</small>`;
   document.querySelector('#attendee-label').textContent = `${count} attendee${count === 1 ? '' : 's'}`;
   document.querySelector('#amount-due').textContent = `₱${amount.toLocaleString()}`;
   document.querySelector('#amount-paid').value = `₱${amount.toLocaleString()}`;
@@ -112,6 +115,8 @@ function updatePaymentSummary() {
   document.querySelector('#review-attendees').textContent = `${count} attendee${count === 1 ? '' : 's'}`;
   document.querySelector('#review-amount').textContent = `₱${amount.toLocaleString()} due`;
 }
+
+updatePaymentSummary();
 
 function showStep(index) {
   currentStep = index;

@@ -11,6 +11,8 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 
 const escapeHtml = (value: unknown) => String(value).replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[character]!);
 
+const registrationFeePerPerson = (now = new Date()) => now >= new Date('2026-11-11T00:00:00+08:00') ? 700 : 600;
+
 async function sendRegistrationConfirmation(registration: Record<string, unknown>) {
   const apiKey = Deno.env.get('RESEND_API_KEY'); const from = Deno.env.get('RESEND_FROM_EMAIL');
   if (!apiKey || !from) { console.warn('Confirmation email skipped: Resend is not configured.'); return false; }
@@ -162,12 +164,13 @@ Deno.serve(async (request) => {
     const proofPath = `${reference}/${Date.now()}-${proof.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
     const uploaded = await supabase.storage.from(bucket).upload(proofPath, proof, { contentType: proof.type, upsert: false });
     if (uploaded.error) throw uploaded.error;
+    const totalAttendees = Math.max(1, Number(value('attendees') || 1));
     const registration = {
       reference, status: 'For Payment Verification', full_name: value('name'), batch_year: Number(value('batch')),
       mobile_number: value('phone'), email_address: value('email'), current_location: value('location') || null,
-      registration_type: value('registrationType'), total_attendees: Number(value('attendees') || 1),
+      registration_type: value('registrationType'), total_attendees: totalAttendees,
       guest_names: form.getAll('guestNames[]').map(String), payment_method: value('paymentMethod'), payment_name: value('paymentName'),
-      amount_paid: Number(value('amountPaid').replace(/[^0-9.]/g, '')), payment_date: value('paymentDate') || null,
+      amount_paid: registrationFeePerPerson() * totalAttendees, payment_date: value('paymentDate') || null,
       transaction_reference: transactionReference, proof_path: proofPath, proof_file_name: proof.name,
       payment_declaration: form.has('declaration'), data_consent: form.has('dataConsent'),
     };

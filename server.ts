@@ -26,6 +26,10 @@ function escapeHtml(value: unknown) {
   return String(value).replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character]!);
 }
 
+function registrationFeePerPerson(now = new Date()) {
+  return now >= new Date("2026-11-11T00:00:00+08:00") ? 700 : 600;
+}
+
 async function sendRegistrationConfirmation(registration: Record<string, unknown>) {
   const apiKey = Bun.env.RESEND_API_KEY;
   const from = Bun.env.RESEND_FROM_EMAIL;
@@ -273,7 +277,8 @@ async function submitRegistration(request: Request) {
     }
 
     const guestNames = Array.isArray(fields.guestNames) ? fields.guestNames : [];
-    const amountPaid = Number(String(fields.amountPaid || "0").replace(/[^0-9.]/g, ""));
+    const totalAttendees = Math.max(1, Number(fields.attendees || 1));
+    const amountPaid = registrationFeePerPerson() * totalAttendees;
     const registration = {
       reference,
       status: "For Payment Verification",
@@ -283,7 +288,7 @@ async function submitRegistration(request: Request) {
       email_address: fields.email || "",
       current_location: fields.location || null,
       registration_type: fields.registrationType || "",
-      total_attendees: Number(fields.attendees || 1),
+      total_attendees: totalAttendees,
       guest_names: guestNames,
       payment_method: fields.paymentMethod || "",
       payment_name: fields.paymentName || "",
