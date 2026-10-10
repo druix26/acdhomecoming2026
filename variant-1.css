@@ -209,3 +209,21 @@ html,body{background:#f2d5ee;color:#28125f}
 .about h2,.registration h2{color:#3c1780}.cause{background:linear-gradient(145deg,#351272,#7314aa 62%,#b916b5)}
 .section-number{color:#ad0da5}.registration-intro>.kicker,.about-copy>.kicker{color:#c20bad}.help-card p{color:#654a79}.help-card a{color:#ac0dad}
 .countdown{background:linear-gradient(90deg,#781bc0,#de0bb9 50%,#2b65cf)}
+
+/* What's Happening */
+.happening{position:relative;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:clamp(40px,6vw,90px);align-items:center;background:radial-gradient(circle at 92% 20%,rgba(0,239,255,.2),transparent 32%),radial-gradient(circle at 5% 90%,rgba(255,79,200,.22),transparent 30%),linear-gradient(180deg,#c88fdb,#a97ad3);border-block:4px solid #19cfe8;box-shadow:inset 0 0 80px rgba(66,23,140,.18)}
+.happening-copy{max-width:640px}
+.happening .section-number{display:inline-block;margin-bottom:28px;color:#2a0d5c}
+.happening h2{font-family:Impact,"Arial Black",sans-serif;text-transform:uppercase;letter-spacing:.005em;font-size:clamp(40px,4.6vw,66px);line-height:1.02;color:#2a0d5c;margin-bottom:22px}
+.happening-copy>p{font-size:17px;line-height:1.7;color:#2a0d5c;margin:0 0 28px}
+.happening-list{list-style:none;margin:0 0 34px;padding:0;display:grid;gap:12px}
+.happening-list li{display:grid;gap:3px;background:#fff;border:2px solid #19cfe8;border-radius:18px;padding:14px 18px;box-shadow:5px 5px 0 #d907b6}
+.happening-list span{font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#b20cac}
+.happening-list strong{font-size:16px;color:#2a1269}
+.happening-list small{font-size:12.5px;color:#5d4175;line-height:1.5}
+.happening-figure{margin:0;width:min(100%,clamp(300px,31vw,400px));justify-self:center;transform:rotate(2deg);transition:transform .3s}
+.happening-figure:hover{transform:rotate(0) scale(1.03)}
+.happening-figure a{display:block}
+.happening-figure img{width:100%;height:auto;border-radius:20px;border:3px solid #19cfe8;box-shadow:8px 8px 0 #d907b6,0 24px 50px rgba(40,18,95,.25)}
+.happening-figure figcaption{font-size:11px;line-height:1.5;color:#2a0d5c;margin-top:20px;text-align:center}
+@media(max-width:900px){.happening{grid-template-columns:1fr;justify-items:center}.happening-figure{order:-1;width:min(312px,100%)}.happening-copy{justify-self:stretch}}
