@@ -30,8 +30,7 @@ const progressItems = [...form.querySelectorAll('.form-progress li')];
 const nextButton = form.querySelector('.next-button');
 const backButton = form.querySelector('.back-button');
 const submitButton = nextButton;
-const regularFeeStart = new Date('2026-11-11T00:00:00+08:00');
-const registrationFeePerPerson = (now = new Date()) => now >= regularFeeStart ? 700 : 600;
+const registrationFeePerPerson = () => 600;
 let currentStep = 0;
 
 const batchSelect = document.querySelector('#batch');

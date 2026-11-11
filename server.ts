@@ -26,8 +26,8 @@ function escapeHtml(value: unknown) {
   return String(value).replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character]!);
 }
 
-function registrationFeePerPerson(now = new Date()) {
-  return now >= new Date("2026-11-11T00:00:00+08:00") ? 700 : 600;
+function registrationFeePerPerson() {
+  return 600;
 }
 
 async function sendRegistrationConfirmation(registration: Record<string, unknown>) {
