@@ -11,7 +11,7 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 
 const escapeHtml = (value: unknown) => String(value).replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[character]!);
 
-const registrationFeePerPerson = (now = new Date()) => now >= new Date('2026-11-11T00:00:00+08:00') ? 700 : 600;
+const registrationFeePerPerson = () => 600;
 
 async function sendRegistrationConfirmation(registration: Record<string, unknown>) {
   const apiKey = Deno.env.get('RESEND_API_KEY'); const from = Deno.env.get('RESEND_FROM_EMAIL');
